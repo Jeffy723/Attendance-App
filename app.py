@@ -2,6 +2,7 @@ from flask import Flask, render_template, request, redirect, session
 from werkzeug.security import generate_password_hash, check_password_hash
 from db import init_db, get_db
 
+OWNER_EMAIL = "jeffykjose10@gmail.com"
 
 app = Flask(__name__)
 app.secret_key = "super-secret-key"
@@ -37,21 +38,20 @@ def login():
 @app.route("/register", methods=["GET", "POST"])
 def register():
     if request.method == "POST":
-        email = request.form["email"]
+        email = request.form["email"].lower()
         password = generate_password_hash(request.form["password"])
+
+        role = "owner" if email == OWNER_EMAIL else "student"
 
         db = get_db()
         cur = db.cursor()
 
-        cur.execute("SELECT COUNT(*) FROM users")
-        count = cur.fetchone()[0]
-        role = "owner" if count == 0 else "student"
-
         cur.execute(
-            "INSERT INTO users (email,password,role) VALUES (?,?,?)",
+            "INSERT INTO users (email, password, role) VALUES (?, ?, ?)",
             (email, password, role)
         )
         db.commit()
+
         return redirect("/")
 
     return render_template("register.html")
