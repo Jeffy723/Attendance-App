@@ -1,66 +1,67 @@
-import sqlite3
+import psycopg2
+import os
 
-DB_NAME = "attendance.db"
+DATABASE_URL = os.environ.get("DATABASE_URL")
+
 
 def get_db():
-    return sqlite3.connect(DB_NAME, check_same_thread=False)
+    return psycopg2.connect(DATABASE_URL)
+
 
 def init_db():
     db = get_db()
+    db.autocommit = True
     cur = db.cursor()
 
     cur.execute("""
     CREATE TABLE IF NOT EXISTS users (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        email TEXT UNIQUE,
-        password TEXT,
-        role TEXT
+        id SERIAL PRIMARY KEY,
+        email TEXT UNIQUE NOT NULL,
+        password TEXT NOT NULL,
+        role TEXT NOT NULL
     )
     """)
 
     cur.execute("""
     CREATE TABLE IF NOT EXISTS semesters (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        id SERIAL PRIMARY KEY,
         name TEXT,
-        is_active INTEGER DEFAULT 0
+        is_active BOOLEAN DEFAULT FALSE
     )
     """)
 
     cur.execute("""
     CREATE TABLE IF NOT EXISTS students (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        user_id INTEGER,
+        id SERIAL PRIMARY KEY,
+        user_id INTEGER REFERENCES users(id),
         name TEXT,
         roll_no TEXT,
-        semester_id INTEGER
+        semester_id INTEGER REFERENCES semesters(id)
     )
     """)
 
     cur.execute("""
     CREATE TABLE IF NOT EXISTS subjects (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        id SERIAL PRIMARY KEY,
         name TEXT,
-        semester_id INTEGER
+        semester_id INTEGER REFERENCES semesters(id)
     )
     """)
 
     cur.execute("""
     CREATE TABLE IF NOT EXISTS class_log (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        date TEXT,
-        subject_id INTEGER,
+        id SERIAL PRIMARY KEY,
+        date DATE,
+        subject_id INTEGER REFERENCES subjects(id),
         hours INTEGER
     )
     """)
 
     cur.execute("""
     CREATE TABLE IF NOT EXISTS attendance (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        class_id INTEGER,
-        student_id INTEGER,
-        attended INTEGER
+        id SERIAL PRIMARY KEY,
+        class_id INTEGER REFERENCES class_log(id),
+        student_id INTEGER REFERENCES students(id),
+        attended BOOLEAN
     )
     """)
-
-
-    db.commit()
