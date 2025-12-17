@@ -18,8 +18,9 @@ def login():
         db = get_db()
         cur = db.cursor()
 
+        # PostgreSQL uses %s instead of ?
         cur.execute(
-            "SELECT id, password, role FROM users WHERE email=?",
+            "SELECT id, password, role FROM users WHERE email = %s",
             (email,)
         )
         user = cur.fetchone()
@@ -46,11 +47,15 @@ def register():
         db = get_db()
         cur = db.cursor()
 
-        cur.execute(
-            "INSERT INTO users (email, password, role) VALUES (?, ?, ?)",
-            (email, password, role)
-        )
-        db.commit()
+        try:
+            cur.execute(
+                "INSERT INTO users (email, password, role) VALUES (%s, %s, %s)",
+                (email, password, role)
+            )
+            db.commit()
+        except Exception as e:
+            db.rollback()
+            return "Email already registered"
 
         return redirect("/")
 
@@ -71,7 +76,7 @@ def dashboard():
     db = get_db()
     cur = db.cursor()
     cur.execute(
-        "SELECT id, name FROM students WHERE user_id=?",
+        "SELECT id, name FROM students WHERE user_id=%s",
         (session["user_id"],)
     )
     student = cur.fetchone()
@@ -99,7 +104,7 @@ def profile():
 
         cur.execute("""
         INSERT INTO students (user_id,name,roll_no,semester_id)
-        VALUES (?,?,?,?)
+        VALUES (%s,%s,%s,%s)
         """, (session["user_id"], name, roll, sem[0]))
 
         db.commit()
@@ -137,7 +142,7 @@ def make_editor(uid):
     cur = db.cursor()
 
     cur.execute(
-        "UPDATE users SET role='editor' WHERE id=?",
+        "UPDATE users SET role='editor' WHERE id=%s",
         (uid,)
     )
     db.commit()
@@ -153,7 +158,7 @@ def remove_editor(uid):
     cur = db.cursor()
 
     cur.execute(
-        "UPDATE users SET role='student' WHERE id=?",
+        "UPDATE users SET role='student' WHERE id=%s",
         (uid,)
     )
     db.commit()
@@ -176,7 +181,7 @@ def add_semester():
 
         # add new active semester
         cur.execute(
-            "INSERT INTO semesters (name, is_active) VALUES (?, 1)",
+            "INSERT INTO semesters (name, is_active) VALUES (%s, 1)",
             (sem_name,)
         )
 
@@ -208,7 +213,7 @@ def add_subject():
         subject_name = request.form["subject"]
 
         cur.execute(
-            "INSERT INTO subjects (name, semester_id) VALUES (?, ?)",
+            "INSERT INTO subjects (name, semester_id) VALUES (%s, %s)",
             (subject_name, semester[0])
         )
         db.commit()
@@ -216,7 +221,7 @@ def add_subject():
 
     # fetch subjects of active semester
     cur.execute(
-        "SELECT name FROM subjects WHERE semester_id = ?",
+        "SELECT name FROM subjects WHERE semester_id = %s",
         (semester[0],)
     )
     subjects = cur.fetchall()
@@ -244,7 +249,7 @@ def add_class():
 
     # get subjects of active semester
     cur.execute(
-        "SELECT id, name FROM subjects WHERE semester_id = ?",
+        "SELECT id, name FROM subjects WHERE semester_id = %s",
         (semester[0],)
     )
     subjects = cur.fetchall()
@@ -257,7 +262,7 @@ def add_class():
 
         cur.execute("""
         INSERT INTO class_log (date, subject_id, hours)
-        VALUES (?, ?, ?)
+        VALUES (%s, %s, %s)
         """, (date, subject_id, hours))
 
         db.commit()
@@ -290,7 +295,7 @@ def mark_attendance():
 
     # Get student ID
     cur.execute(
-        "SELECT id FROM students WHERE user_id = ?",
+        "SELECT id FROM students WHERE user_id = %s",
         (session["user_id"],)
     )
     student = cur.fetchone()
@@ -309,7 +314,7 @@ def mark_attendance():
         SELECT class_log.id, subjects.name, class_log.hours
         FROM class_log
         JOIN subjects ON class_log.subject_id = subjects.id
-        WHERE class_log.date = ?
+        WHERE class_log.date = %s
         """, (date,))
         classes = cur.fetchall()
 
@@ -321,13 +326,13 @@ def mark_attendance():
             # Prevent duplicate attendance
             cur.execute("""
             SELECT id FROM attendance
-            WHERE class_id = ? AND student_id = ?
+            WHERE class_id = %s AND student_id = %s
             """, (class_id, student_id))
 
             if not cur.fetchone():
                 cur.execute("""
                 INSERT INTO attendance (class_id, student_id, attended)
-                VALUES (?, ?, 1)
+                VALUES (%s, %s, 1)
                 """, (class_id, student_id))
 
         db.commit()
@@ -350,7 +355,7 @@ def view_attendance():
 
     # get student id
     cur.execute(
-        "SELECT id FROM students WHERE user_id=?",
+        "SELECT id FROM students WHERE user_id=%s",
         (session["user_id"],)
     )
     student_id = cur.fetchone()[0]
@@ -368,7 +373,7 @@ def view_attendance():
     JOIN class_log ON class_log.subject_id = subjects.id
     LEFT JOIN attendance
       ON attendance.class_id = class_log.id
-      AND attendance.student_id = ?
+      AND attendance.student_id = %s
     GROUP BY subjects.id
     """, (student_id,))
 
@@ -399,7 +404,7 @@ def edit_attendance():
 
     # Get student ID
     cur.execute(
-        "SELECT id FROM students WHERE user_id=?",
+        "SELECT id FROM students WHERE user_id=%s",
         (session["user_id"],)
     )
     student_id = cur.fetchone()[0]
@@ -410,7 +415,7 @@ def edit_attendance():
         status = request.form["status"]
 
         cur.execute(
-            "UPDATE attendance SET attended=? WHERE id=?",
+            "UPDATE attendance SET attended=%s WHERE id=%s",
             (status, att_id)
         )
         db.commit()
@@ -423,7 +428,7 @@ def edit_attendance():
     FROM attendance
     JOIN class_log ON attendance.class_id = class_log.id
     JOIN subjects ON class_log.subject_id = subjects.id
-    WHERE attendance.student_id = ?
+    WHERE attendance.student_id = %s
     ORDER BY class_log.date DESC
     """, (student_id,))
 
@@ -439,7 +444,7 @@ def delete_attendance(att_id):
     db = get_db()
     cur = db.cursor()
 
-    cur.execute("DELETE FROM attendance WHERE id=?", (att_id,))
+    cur.execute("DELETE FROM attendance WHERE id=%s", (att_id,))
     db.commit()
 
     return redirect("/edit_attendance")
@@ -480,8 +485,8 @@ def edit_class(cid):
 
         cur.execute("""
         UPDATE class_log
-        SET date=?, subject_id=?, hours=?
-        WHERE id=?
+        SET date=%s, subject_id=%s, hours=%s
+        WHERE id=%s
         """, (date, subject_id, hours, cid))
 
         db.commit()
@@ -491,7 +496,7 @@ def edit_class(cid):
     cur.execute("""
     SELECT date, subject_id, hours
     FROM class_log
-    WHERE id=?
+    WHERE id=%s
     """, (cid,))
     class_data = cur.fetchone()
 
@@ -515,8 +520,8 @@ def delete_class(cid):
     db = get_db()
     cur = db.cursor()
 
-    cur.execute("DELETE FROM attendance WHERE class_id=?", (cid,))
-    cur.execute("DELETE FROM class_log WHERE id=?", (cid,))
+    cur.execute("DELETE FROM attendance WHERE class_id=%s", (cid,))
+    cur.execute("DELETE FROM class_log WHERE id=%s", (cid,))
     db.commit()
 
     return redirect("/manage_classes")
