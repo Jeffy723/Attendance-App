@@ -1,0 +1,18 @@
+<h2>Add Subject</h2>
+
+<p><b>Active Semester:</b> {{ semester[1] }}</p>
+
+<form method="post">
+  Subject name:
+  <input name="subject" required>
+  <button>Add Subject</button>
+</form>
+
+<h3>Subjects in this semester</h3>
+<ul>
+  {% for s in subjects %}
+    <li>{{ s[0] }}</li>
+  {% endfor %}
+</ul>
+
+<a href="/dashboard">Back</a>

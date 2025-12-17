@@ -1,0 +1,28 @@
+<h2>Manage Users</h2>
+
+<table border="1">
+<tr>
+  <th>Email</th>
+  <th>Role</th>
+  <th>Action</th>
+</tr>
+
+{% for u in users %}
+<tr>
+  <td>{{ u[1] }}</td>
+  <td>{{ u[2] }}</td>
+  <td>
+    {% if u[2] == 'student' %}
+      <a href="/make_editor/{{ u[0] }}">Make Editor</a>
+    {% elif u[2] == 'editor' %}
+      <a href="/remove_editor/{{ u[0] }}">Remove Editor</a>
+    {% else %}
+      Owner
+    {% endif %}
+  </td>
+</tr>
+{% endfor %}
+</table>
+
+<br>
+<a href="/dashboard">Back</a>

@@ -1,0 +1,56 @@
+<h2>Attendance Summary</h2>
+
+<h3>Overall Attendance</h3>
+<p>
+  Total Hours: <b>{{ total_all }}</b><br>
+  Attended Hours: <b>{{ attended_all }}</b><br>
+  Percentage:
+  {% if overall_pct < 75 %}
+    <span style="color:red"><b>{{ "%.2f"|format(overall_pct) }}%</b></span>
+  {% else %}
+    <b>{{ "%.2f"|format(overall_pct) }}%</b>
+  {% endif %}
+</p>
+
+<hr>
+
+<h3>Subject-wise Attendance</h3>
+
+<table border="1">
+<tr>
+  <th>Subject</th>
+  <th>Total</th>
+  <th>Attended</th>
+  <th>Missed</th>
+  <th>Percentage</th>
+  <th>Status</th>
+</tr>
+
+{% for d in data %}
+{% set missed = d[1] - d[2] %}
+{% set pct = (d[2] / d[1] * 100) if d[1] > 0 else 0 %}
+<tr>
+  <td>{{ d[0] }}</td>
+  <td>{{ d[1] }}</td>
+  <td>{{ d[2] }}</td>
+  <td>{{ missed }}</td>
+  <td>
+    {% if pct < 75 %}
+      <span style="color:red">{{ "%.2f"|format(pct) }}%</span>
+    {% else %}
+      {{ "%.2f"|format(pct) }}%
+    {% endif %}
+  </td>
+  <td>
+    {% if pct < 75 %}
+      ⚠️ Shortage
+    {% else %}
+      ✅ Safe
+    {% endif %}
+  </td>
+</tr>
+{% endfor %}
+</table>
+
+<br>
+<a href="/dashboard">Back</a>

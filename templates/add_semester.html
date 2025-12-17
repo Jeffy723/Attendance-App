@@ -1,0 +1,19 @@
+<h2>Add / Change Semester</h2>
+
+<form method="post">
+  Semester name:
+  <input name="semester" placeholder="S4 / Semester 4" required>
+  <button>Add & Activate</button>
+</form>
+
+<h3>Existing Semesters</h3>
+<ul>
+  {% for s in semesters %}
+    <li>
+      {{ s[0] }}
+      {% if s[1] == 1 %} (ACTIVE) {% endif %}
+    </li>
+  {% endfor %}
+</ul>
+
+<a href="/dashboard">Back</a>

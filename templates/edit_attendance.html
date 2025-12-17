@@ -1,0 +1,40 @@
+<h2>Edit Attendance</h2>
+
+<table border="1">
+<tr>
+  <th>Date</th>
+  <th>Subject</th>
+  <th>Hours</th>
+  <th>Status</th>
+  <th>Action</th>
+</tr>
+
+{% for r in records %}
+<tr>
+  <td>{{ r[1] }}</td>
+  <td>{{ r[2] }}</td>
+  <td>{{ r[3] }}</td>
+  <td>
+    {% if r[4] == 1 %}
+      Present
+    {% else %}
+      Absent
+    {% endif %}
+  </td>
+  <td>
+    <form method="post" style="display:inline;">
+      <input type="hidden" name="att_id" value="{{ r[0] }}">
+      <select name="status">
+        <option value="1">Present</option>
+        <option value="0">Absent</option>
+      </select>
+      <button type="submit">Update</button>
+    </form>
+  </td>
+</tr>
+{% endfor %}
+</table>
+
+<br>
+<a href="/dashboard">Back</a>
+

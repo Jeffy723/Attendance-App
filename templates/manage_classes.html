@@ -1,0 +1,29 @@
+<h2>Manage Class Hours</h2>
+
+<table border="1">
+<tr>
+  <th>Date</th>
+  <th>Subject</th>
+  <th>Hours</th>
+  <th>Action</th>
+</tr>
+
+{% for c in classes %}
+<tr>
+  <td>{{ c[1] }}</td>
+  <td>{{ c[2] }}</td>
+  <td>{{ c[3] }}</td>
+  <td>
+	<a href="/edit_class/{{ c[0] }}">Edit</a> |
+	<a href="/delete_class/{{ c[0] }}"
+        onclick="return confirm('Deleting this will remove all linked attendance. Continue?');">
+       	Delete
+	</a>
+
+  </td>
+</tr>
+{% endfor %}
+</table>
+
+<br>
+<a href="/dashboard">Back</a>

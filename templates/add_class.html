@@ -1,0 +1,46 @@
+<h2>Add Class Hours</h2>
+
+<p><b>Active Semester:</b> {{ semester[1] }}</p>
+
+<form method="post">
+  Date:
+  <input type="date" name="date" required><br><br>
+
+  Subject:
+  <select name="subject" required>
+    {% for s in subjects %}
+      <option value="{{ s[0] }}">{{ s[1] }}</option>
+    {% endfor %}
+  </select><br><br>
+
+  Hours:
+  <select name="hours">
+    <option value="1">1</option>
+    <option value="2">2</option>
+    <option value="3">3</option>
+  </select><br><br>
+
+  Note (optional):
+  <input name="note" placeholder="Seminar / Swap / Extra class"><br><br>
+
+  <button>Add Class</button>
+</form>
+
+<h3>Class Hours Logged</h3>
+<table border="1">
+  <tr>
+    <th>Date</th>
+    <th>Subject</th>
+    <th>Hours</th>
+  </tr>
+  {% for c in classes %}
+  <tr>
+    <td>{{ c[0] }}</td>
+    <td>{{ c[1] }}</td>
+    <td>{{ c[2] }}</td>
+  </tr>
+  {% endfor %}
+</table>
+
+<br>
+<a href="/dashboard">Back</a>
