@@ -521,7 +521,9 @@ def delete_class(cid):
 
     return redirect("/manage_classes")
 
-app.run()
+if __name__ == "__main__":
+    pass
+
 
 
 
