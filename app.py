@@ -95,7 +95,7 @@ def profile():
     db = get_db()
     cur = db.cursor()
 
-    cur.execute("SELECT id FROM semesters WHERE is_active=1")
+    cur.execute("SELECT id FROM semesters WHERE is_active=TRUE")
     sem = cur.fetchone()
 
     if request.method == "POST":
@@ -177,11 +177,11 @@ def add_semester():
         sem_name = request.form["semester"]
 
         # deactivate all semesters
-        cur.execute("UPDATE semesters SET is_active = 0")
+        cur.execute("UPDATE semesters SET is_active = FALSE")
 
         # add new active semester
         cur.execute(
-            "INSERT INTO semesters (name, is_active) VALUES (%s, 1)",
+            "INSERT INTO semesters (name, is_active) VALUES (%s, TRUE)",
             (sem_name,)
         )
 
@@ -203,7 +203,7 @@ def add_subject():
     cur = db.cursor()
 
     # get active semester
-    cur.execute("SELECT id, name FROM semesters WHERE is_active = 1")
+    cur.execute("SELECT id, name FROM semesters WHERE is_active = TRUE")
     semester = cur.fetchone()
 
     if not semester:
@@ -241,7 +241,7 @@ def add_class():
     cur = db.cursor()
 
     # get active semester
-    cur.execute("SELECT id, name FROM semesters WHERE is_active = 1")
+    cur.execute("SELECT id, name FROM semesters WHERE is_active = TRUE")
     semester = cur.fetchone()
 
     if not semester:
@@ -332,7 +332,7 @@ def mark_attendance():
             if not cur.fetchone():
                 cur.execute("""
                 INSERT INTO attendance (class_id, student_id, attended)
-                VALUES (%s, %s, 1)
+                VALUES (%s, %s, TRUE)
                 """, (class_id, student_id))
 
         db.commit()
@@ -353,44 +353,37 @@ def view_attendance():
     db = get_db()
     cur = db.cursor()
 
-    # get student id
-    cur.execute(
-        "SELECT id FROM students WHERE user_id=%s",
-        (session["user_id"],)
-    )
+    cur.execute("SELECT id FROM students WHERE user_id=%s", (session["user_id"],))
     student_id = cur.fetchone()[0]
 
-    # subject-wise analytics
     cur.execute("""
-    SELECT
-        subjects.name,
-        IFNULL(SUM(class_log.hours), 0) AS total_hours,
-        IFNULL(SUM(
-            CASE WHEN attendance.attended = 1
-            THEN class_log.hours ELSE 0 END
-        ), 0) AS attended_hours
-    FROM subjects
-    JOIN class_log ON class_log.subject_id = subjects.id
-    LEFT JOIN attendance
-      ON attendance.class_id = class_log.id
-      AND attendance.student_id = %s
-    GROUP BY subjects.id
+        SELECT
+            subjects.name,
+            COALESCE(SUM(class_log.hours), 0),
+            COALESCE(SUM(
+                CASE WHEN attendance.attended = TRUE
+                THEN class_log.hours ELSE 0 END
+            ), 0)
+        FROM subjects
+        JOIN class_log ON class_log.subject_id = subjects.id
+        LEFT JOIN attendance
+          ON attendance.class_id = class_log.id
+          AND attendance.student_id = %s
+        GROUP BY subjects.id
     """, (student_id,))
 
     data = cur.fetchall()
 
-    # overall analytics
-    total_all = sum(d[1] for d in data)
-    attended_all = sum(d[2] for d in data)
-
-    overall_pct = (attended_all / total_all * 100) if total_all > 0 else 0
+    total = sum(d[1] for d in data)
+    attended = sum(d[2] for d in data)
+    pct = (attended / total * 100) if total > 0 else 0
 
     return render_template(
         "view_attendance.html",
         data=data,
-        total_all=total_all,
-        attended_all=attended_all,
-        overall_pct=overall_pct
+        total_all=total,
+        attended_all=attended,
+        overall_pct=pct
     )
 
 
@@ -402,17 +395,15 @@ def edit_attendance():
     db = get_db()
     cur = db.cursor()
 
-    # Get student ID
     cur.execute(
         "SELECT id FROM students WHERE user_id=%s",
         (session["user_id"],)
     )
     student_id = cur.fetchone()[0]
 
-    # Handle update
     if request.method == "POST":
         att_id = request.form["att_id"]
-        status = request.form["status"]
+        status = request.form["status"] == "true"   # ✅ FIX
 
         cur.execute(
             "UPDATE attendance SET attended=%s WHERE id=%s",
@@ -421,15 +412,17 @@ def edit_attendance():
         db.commit()
         return redirect("/edit_attendance")
 
-    # Fetch attendance
     cur.execute("""
-    SELECT attendance.id, class_log.date, subjects.name,
-           class_log.hours, attendance.attended
-    FROM attendance
-    JOIN class_log ON attendance.class_id = class_log.id
-    JOIN subjects ON class_log.subject_id = subjects.id
-    WHERE attendance.student_id = %s
-    ORDER BY class_log.date DESC
+        SELECT attendance.id,
+               class_log.date,
+               subjects.name,
+               class_log.hours,
+               attendance.attended
+        FROM attendance
+        JOIN class_log ON attendance.class_id = class_log.id
+        JOIN subjects ON class_log.subject_id = subjects.id
+        WHERE attendance.student_id = %s
+        ORDER BY class_log.date DESC
     """, (student_id,))
 
     records = cur.fetchall()
@@ -450,6 +443,7 @@ def delete_attendance(att_id):
     return redirect("/edit_attendance")
 
 
+
 @app.route("/manage_classes")
 def manage_classes():
     if session.get("role") not in ["owner", "editor"]:
@@ -459,10 +453,13 @@ def manage_classes():
     cur = db.cursor()
 
     cur.execute("""
-    SELECT class_log.id, class_log.date, subjects.name, class_log.hours
-    FROM class_log
-    JOIN subjects ON class_log.subject_id = subjects.id
-    ORDER BY class_log.date DESC
+        SELECT class_log.id,
+               class_log.date,
+               subjects.name,
+               class_log.hours
+        FROM class_log
+        JOIN subjects ON class_log.subject_id = subjects.id
+        ORDER BY class_log.date DESC
     """)
     classes = cur.fetchall()
 
@@ -477,30 +474,27 @@ def edit_class(cid):
     db = get_db()
     cur = db.cursor()
 
-    # Handle update
     if request.method == "POST":
         date = request.form["date"]
         subject_id = request.form["subject_id"]
         hours = request.form["hours"]
 
         cur.execute("""
-        UPDATE class_log
-        SET date=%s, subject_id=%s, hours=%s
-        WHERE id=%s
+            UPDATE class_log
+            SET date=%s, subject_id=%s, hours=%s
+            WHERE id=%s
         """, (date, subject_id, hours, cid))
 
         db.commit()
         return redirect("/manage_classes")
 
-    # Fetch class details
     cur.execute("""
-    SELECT date, subject_id, hours
-    FROM class_log
-    WHERE id=%s
+        SELECT date, subject_id, hours
+        FROM class_log
+        WHERE id=%s
     """, (cid,))
     class_data = cur.fetchone()
 
-    # Fetch subjects
     cur.execute("SELECT id, name FROM subjects")
     subjects = cur.fetchall()
 
@@ -526,8 +520,16 @@ def delete_class(cid):
 
     return redirect("/manage_classes")
 
+
+@app.route("/logout")
+def logout():
+    session.clear()
+    return redirect("/")
+
+
 if __name__ == "__main__":
-    pass
+    init_db()
+    app.run(debug=True)
 
 
 

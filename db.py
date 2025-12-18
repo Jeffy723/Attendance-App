@@ -5,12 +5,14 @@ DATABASE_URL = os.environ.get("DATABASE_URL")
 
 
 def get_db():
-    return psycopg2.connect(DATABASE_URL)
+    return psycopg2.connect(
+        DATABASE_URL,
+        sslmode="require"
+    )
 
 
 def init_db():
     db = get_db()
-    db.autocommit = True
     cur = db.cursor()
 
     cur.execute("""
@@ -33,7 +35,7 @@ def init_db():
     cur.execute("""
     CREATE TABLE IF NOT EXISTS students (
         id SERIAL PRIMARY KEY,
-        user_id INTEGER REFERENCES users(id),
+        user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
         name TEXT,
         roll_no TEXT,
         semester_id INTEGER REFERENCES semesters(id)
@@ -60,8 +62,13 @@ def init_db():
     cur.execute("""
     CREATE TABLE IF NOT EXISTS attendance (
         id SERIAL PRIMARY KEY,
-        class_id INTEGER REFERENCES class_log(id),
-        student_id INTEGER REFERENCES students(id),
+        class_id INTEGER REFERENCES class_log(id) ON DELETE CASCADE,
+        student_id INTEGER REFERENCES students(id) ON DELETE CASCADE,
         attended BOOLEAN
     )
     """)
+
+    db.commit()
+    cur.close()
+    db.close()
+
