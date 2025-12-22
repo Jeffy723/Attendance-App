@@ -405,38 +405,50 @@ def edit_attendance():
     db = get_db()
     cur = db.cursor()
 
+    # Get student id
     cur.execute(
         "SELECT id FROM students WHERE user_id=%s",
         (session["user_id"],)
     )
     student_id = cur.fetchone()[0]
 
-    if request.method == "POST":
+    date = request.form.get("date")
+    records = []
+
+    # Handle update
+    if request.method == "POST" and "att_id" in request.form:
         att_id = request.form["att_id"]
-        status = request.form["status"] == "true"   # ✅ FIX
+        status = request.form["status"] == "1"
 
         cur.execute(
             "UPDATE attendance SET attended=%s WHERE id=%s",
             (status, att_id)
         )
         db.commit()
-        return redirect("/edit_attendance")
 
-    cur.execute("""
-        SELECT attendance.id,
-               class_log.date,
-               subjects.name,
-               class_log.hours,
-               attendance.attended
-        FROM attendance
-        JOIN class_log ON attendance.class_id = class_log.id
-        JOIN subjects ON class_log.subject_id = subjects.id
-        WHERE attendance.student_id = %s
-        ORDER BY class_log.date DESC
-    """, (student_id,))
+    # Load records for selected date
+    if date:
+        cur.execute("""
+            SELECT attendance.id,
+                   subjects.name,
+                   class_log.hours,
+                   attendance.attended
+            FROM attendance
+            JOIN class_log ON attendance.class_id = class_log.id
+            JOIN subjects ON class_log.subject_id = subjects.id
+            WHERE attendance.student_id = %s
+              AND class_log.date = %s
+            ORDER BY subjects.name
+        """, (student_id, date))
 
-    records = cur.fetchall()
-    return render_template("edit_attendance.html", records=records)
+        records = cur.fetchall()
+
+    return render_template(
+        "edit_attendance.html",
+        records=records,
+        date=date
+    )
+
 
 
 @app.route("/delete_attendance/<int:att_id>")
