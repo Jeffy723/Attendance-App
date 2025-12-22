@@ -466,7 +466,7 @@ def delete_attendance(att_id):
 
 
 
-@app.route("/manage_classes")
+@app.route("/manage_classes", methods=["GET", "POST"])
 def manage_classes():
     if session.get("role") not in ["owner", "editor"]:
         return "Unauthorized"
@@ -474,18 +474,27 @@ def manage_classes():
     db = get_db()
     cur = db.cursor()
 
-    cur.execute("""
-        SELECT class_log.id,
-               class_log.date,
-               subjects.name,
-               class_log.hours
-        FROM class_log
-        JOIN subjects ON class_log.subject_id = subjects.id
-        ORDER BY class_log.date DESC
-    """)
-    classes = cur.fetchall()
+    date = request.form.get("date")
+    classes = []
 
-    return render_template("manage_classes.html", classes=classes)
+    if date:
+        cur.execute("""
+            SELECT class_log.id,
+                   class_log.date,
+                   subjects.name,
+                   class_log.hours
+            FROM class_log
+            JOIN subjects ON class_log.subject_id = subjects.id
+            WHERE class_log.date = %s
+            ORDER BY subjects.name
+        """, (date,))
+        classes = cur.fetchall()
+
+    return render_template(
+        "manage_classes.html",
+        classes=classes,
+        date=date
+    )
 
 
 @app.route("/edit_class/<int:cid>", methods=["GET", "POST"])

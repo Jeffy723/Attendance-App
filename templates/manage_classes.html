@@ -1,29 +1,81 @@
-<h2>Manage Class Hours</h2>
+{% extends "base.html" %}
+{% block title %}Manage Class Hours{% endblock %}
 
-<table border="1">
-<tr>
-  <th>Date</th>
-  <th>Subject</th>
-  <th>Hours</th>
-  <th>Action</th>
-</tr>
+{% block content %}
 
-{% for c in classes %}
-<tr>
-  <td>{{ c[1] }}</td>
-  <td>{{ c[2] }}</td>
-  <td>{{ c[3] }}</td>
-  <td>
-	<a href="/edit_class/{{ c[0] }}">Edit</a> |
-	<a href="/delete_class/{{ c[0] }}"
-        onclick="return confirm('Deleting this will remove all linked attendance. Continue?');">
-       	Delete
-	</a>
+<div class="mb-4">
+  <h3>Manage Class Hours</h3>
+  <p class="text-muted">
+    Select a date to edit or delete logged class hours.
+  </p>
+</div>
 
-  </td>
-</tr>
-{% endfor %}
-</table>
+<div class="card shadow-sm mb-4">
+  <div class="card-body">
+    <form method="post" class="row g-3 align-items-end">
+      <div class="col-md-4">
+        <label class="form-label">Select Date</label>
+        <input
+          type="date"
+          name="date"
+          value="{{ date }}"
+          class="form-control"
+          required
+        >
+      </div>
+      <div class="col-md-3">
+        <button class="btn btn-primary w-100">
+          Load Classes
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
 
-<br>
-<a href="/dashboard">Back</a>
+{% if classes %}
+<div class="card shadow-sm">
+  <div class="card-body p-0">
+    <table class="table table-hover mb-0">
+      <thead class="table-light">
+        <tr>
+          <th>Subject</th>
+          <th>Hours</th>
+          <th class="text-center">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for c in classes %}
+        <tr>
+          <td>{{ c[2] }}</td>
+          <td>{{ c[3] }}</td>
+          <td class="text-center">
+            <a
+              href="/edit_class/{{ c[0] }}"
+              class="btn btn-sm btn-warning"
+            >
+              Edit
+            </a>
+            <a
+              href="/delete_class/{{ c[0] }}"
+              class="btn btn-sm btn-danger"
+              onclick="return confirm(
+                'Deleting this class will remove all linked attendance. Continue?'
+              );"
+            >
+              Delete
+            </a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+
+<a href="/dashboard" class="btn btn-outline-secondary mt-4">
+  ← Back to Dashboard
+</a>
+
+{% endblock %}
+
