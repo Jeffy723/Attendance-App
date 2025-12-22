@@ -1,28 +1,67 @@
-<h2>Manage Users</h2>
+{% extends "base.html" %}
+{% block title %}Manage Users{% endblock %}
 
-<table border="1">
-<tr>
-  <th>Email</th>
-  <th>Role</th>
-  <th>Action</th>
-</tr>
+{% block content %}
 
-{% for u in users %}
-<tr>
-  <td>{{ u[1] }}</td>
-  <td>{{ u[2] }}</td>
-  <td>
-    {% if u[2] == 'student' %}
-      <a href="/make_editor/{{ u[0] }}">Make Editor</a>
-    {% elif u[2] == 'editor' %}
-      <a href="/remove_editor/{{ u[0] }}">Remove Editor</a>
-    {% else %}
-      Owner
-    {% endif %}
-  </td>
-</tr>
-{% endfor %}
-</table>
+<div class="mb-4">
+  <h3>Manage Users</h3>
+  <p class="text-muted">
+    Promote students to editors or revoke editor access.
+  </p>
+</div>
 
-<br>
-<a href="/dashboard">Back</a>
+<div class="card shadow-sm mb-4">
+  <div class="card-body p-0">
+    <table class="table table-hover mb-0">
+      <thead class="table-light">
+        <tr>
+          <th>Email</th>
+          <th>Role</th>
+          <th class="text-center">Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for u in users %}
+        <tr>
+          <td>{{ u[1] }}</td>
+          <td>
+            {% if u[2] == 'owner' %}
+              <span class="badge bg-dark">Owner</span>
+            {% elif u[2] == 'editor' %}
+              <span class="badge bg-warning text-dark">Editor</span>
+            {% else %}
+              <span class="badge bg-secondary">Student</span>
+            {% endif %}
+          </td>
+          <td class="text-center">
+            {% if u[2] == 'student' %}
+              <a
+                href="/make_editor/{{ u[0] }}"
+                class="btn btn-sm btn-success"
+              >
+                Make Editor
+              </a>
+            {% elif u[2] == 'editor' %}
+              <a
+                href="/remove_editor/{{ u[0] }}"
+                class="btn btn-sm btn-danger"
+              >
+                Remove Editor
+              </a>
+            {% else %}
+              <span class="text-muted">—</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<a href="/dashboard" class="btn btn-outline-secondary">
+  ← Back to Dashboard
+</a>
+
+{% endblock %}
+
