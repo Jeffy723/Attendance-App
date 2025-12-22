@@ -1,6 +1,7 @@
 from flask import Flask, render_template, request, redirect, session, flash
 from werkzeug.security import generate_password_hash, check_password_hash
 from db import init_db, get_db
+from datetime import date
 
 OWNER_EMAIL = "jeffykjose10@gmail.com"
 
@@ -179,7 +180,28 @@ def remove_editor(uid):
 
 @app.route("/editor_dashboard")
 def editor_dashboard():
-    return "EDITOR ROUTE HIT"
+    if session.get("role") != "editor":
+        return redirect("/")
+
+    db = get_db()
+    cur = db.cursor()
+
+    # Total classes logged (all time)
+    cur.execute("SELECT COUNT(*) FROM class_log")
+    total_classes = cur.fetchone()[0]
+
+    # Classes logged today
+    cur.execute(
+        "SELECT COUNT(*) FROM class_log WHERE date = %s",
+        (date.today(),)
+    )
+    today_classes = cur.fetchone()[0]
+
+    return render_template(
+        "editor_dashboard.html",
+        total_classes=total_classes,
+        today_classes=today_classes
+    )
 
 
 @app.route("/add_semester", methods=["GET", "POST"])
