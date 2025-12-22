@@ -552,6 +552,54 @@ def delete_class(cid):
     return redirect("/manage_classes")
 
 
+@app.route("/delete_user/<int:user_id>")
+def delete_user(user_id):
+    if session.get("role") != "owner":
+        return "Unauthorized"
+
+    db = get_db()
+    cur = db.cursor()
+
+    # Prevent deleting self
+    if user_id == session.get("user_id"):
+        return "You cannot delete your own account"
+
+    # Check user role
+    cur.execute("SELECT role FROM users WHERE id=%s", (user_id,))
+    user = cur.fetchone()
+
+    if not user:
+        return redirect("/manage_users")
+
+    if user[0] == "owner":
+        return "Cannot delete another owner"
+
+    # If student → clean attendance + student record
+    if user[0] == "student":
+        cur.execute(
+            "SELECT id FROM students WHERE user_id=%s",
+            (user_id,)
+        )
+        student = cur.fetchone()
+
+        if student:
+            student_id = student[0]
+            cur.execute(
+                "DELETE FROM attendance WHERE student_id=%s",
+                (student_id,)
+            )
+            cur.execute(
+                "DELETE FROM students WHERE id=%s",
+                (student_id,)
+            )
+
+    # Finally delete user
+    cur.execute("DELETE FROM users WHERE id=%s", (user_id,))
+    db.commit()
+
+    return redirect("/manage_users")
+
+
 @app.route("/logout")
 def logout():
     session.clear()
