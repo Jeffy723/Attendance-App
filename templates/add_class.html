@@ -1,46 +1,78 @@
-<h2>Add Class Hours</h2>
+{% extends "base.html" %}
+{% block title %}Add Class Hours{% endblock %}
 
-<p><b>Active Semester:</b> {{ semester[1] }}</p>
+{% block content %}
 
-<form method="post">
-  Date:
-  <input type="date" name="date" required><br><br>
+<div class="mb-4">
+  <h3>Add Class Hours</h3>
+  <p class="text-muted">
+    Log class hours for the active semester.
+  </p>
+</div>
 
-  Subject:
-  <select name="subject" required>
-    {% for s in subjects %}
-      <option value="{{ s[0] }}">{{ s[1] }}</option>
-    {% endfor %}
-  </select><br><br>
+<div class="card shadow-sm">
+  <div class="card-body">
 
-  Hours:
-  <select name="hours">
-    <option value="1">1</option>
-    <option value="2">2</option>
-    <option value="3">3</option>
-  </select><br><br>
+    <p class="mb-3">
+      <b>Active Semester:</b> {{ semester[1] }}
+    </p>
 
-  Note (optional):
-  <input name="note" placeholder="Seminar / Swap / Extra class"><br><br>
+    <form method="post" class="row g-3">
 
-  <button>Add Class</button>
-</form>
+      <div class="col-md-4">
+        <label class="form-label">Date</label>
+        <input
+          type="date"
+          name="date"
+          class="form-control"
+          required
+        >
+      </div>
 
-<h3>Class Hours Logged</h3>
-<table border="1">
-  <tr>
-    <th>Date</th>
-    <th>Subject</th>
-    <th>Hours</th>
-  </tr>
-  {% for c in classes %}
-  <tr>
-    <td>{{ c[0] }}</td>
-    <td>{{ c[1] }}</td>
-    <td>{{ c[2] }}</td>
-  </tr>
-  {% endfor %}
-</table>
+      <div class="col-md-4">
+        <label class="form-label">Subject</label>
+        <select name="subject" class="form-select" required>
+          {% for s in subjects %}
+            <option value="{{ s[0] }}">{{ s[1] }}</option>
+          {% endfor %}
+        </select>
+      </div>
 
-<br>
-<a href="/dashboard">Back</a>
+      <div class="col-md-4">
+        <label class="form-label">Hours</label>
+        <select name="hours" class="form-select">
+          <option value="1">1</option>
+          <option value="2">2</option>
+          <option value="3">3</option>
+        </select>
+      </div>
+
+      <div class="col-md-12">
+        <label class="form-label">Note (optional)</label>
+        <input
+          name="note"
+          class="form-control"
+          placeholder="Seminar / Swap / Extra class"
+        >
+      </div>
+
+      <div class="col-12 d-flex gap-2 mt-3">
+        <button class="btn btn-primary">
+          Add Class
+        </button>
+        <a href="/manage_classes" class="btn btn-outline-secondary">
+          Manage Classes
+        </a>
+      </div>
+
+    </form>
+
+  </div>
+</div>
+
+<a href="/dashboard" class="btn btn-outline-secondary mt-4">
+  ← Back to Dashboard
+</a>
+
+{% endblock %}
+
