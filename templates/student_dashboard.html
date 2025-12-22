@@ -1,12 +1,66 @@
-<h2>Student Dashboard</h2>
+{% extends "base.html" %}
+{% block title %}Student Dashboard{% endblock %}
 
-<p>Welcome, <b>{{ student[1] }}</b></p>
+{% block content %}
 
-<ul>
-  <li><a href="/mark_attendance">Mark Attendance</a></li>
-  <li><a href="/view_attendance">View Attendance Summary</a></li>
-  <li><a href="/edit_attendance">Edit / Delete Attendance</a></li>
-</ul>
+<div class="mb-4">
+  <h3>Student Dashboard</h3>
+  <p class="text-muted">
+    Welcome, <strong>{{ student[1] }}</strong>
+  </p>
+</div>
 
+<div class="row g-3">
 
-<a href="/">Logout</a>
+  <div class="col-md-4">
+    <div class="card shadow-sm h-100">
+      <div class="card-body">
+        <h5 class="card-title">Mark Attendance</h5>
+        <p class="card-text">
+          Mark attendance for classes conducted on a specific date.
+        </p>
+        <a href="/mark_attendance" class="btn btn-primary w-100">
+          Go
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-4">
+    <div class="card shadow-sm h-100">
+      <div class="card-body">
+        <h5 class="card-title">View Attendance</h5>
+        <p class="card-text">
+          View subject-wise and overall attendance summary.
+        </p>
+        <a href="/view_attendance" class="btn btn-success w-100">
+          View
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-4">
+    <div class="card shadow-sm h-100">
+      <div class="card-body">
+        <h5 class="card-title">Edit Attendance</h5>
+        <p class="card-text">
+          Edit or delete previously marked attendance records.
+        </p>
+        <a href="/edit_attendance" class="btn btn-warning w-100">
+          Edit
+        </a>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="mt-4">
+  <a href="/logout" class="btn btn-outline-danger">
+    Logout
+  </a>
+</div>
+
+{% endblock %}
+
