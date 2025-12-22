@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, session
+from flask import Flask, render_template, request, redirect, session, flash
 from werkzeug.security import generate_password_hash, check_password_hash
 from db import init_db, get_db
 
@@ -12,26 +12,32 @@ init_db()
 @app.route("/", methods=["GET", "POST"])
 def login():
     if request.method == "POST":
-        email = request.form["email"]
+        email = request.form["email"].lower()
         password = request.form["password"]
 
         db = get_db()
         cur = db.cursor()
 
-        # PostgreSQL uses %s instead of ?
         cur.execute(
-            "SELECT id, password, role FROM users WHERE email = %s",
+            "SELECT id, password, role FROM users WHERE email=%s",
             (email,)
         )
         user = cur.fetchone()
 
-        if user and check_password_hash(user[1], password):
-            session["user_id"] = user[0]
-            session["role"] = user[2]
+        if not user:
+            flash("User not found. Please register first.", "danger")
+            return redirect("/")
 
-            return redirect("/dashboard")
+        if not check_password_hash(user[1], password):
+            flash("Incorrect password. Try again.", "danger")
+            return redirect("/")
 
-        return "Invalid email or password"
+        # SUCCESS
+        session["user_id"] = user[0]
+        session["role"] = user[2]
+
+        flash("Login successful!", "success")
+        return redirect("/dashboard")
 
     return render_template("login.html")
 
