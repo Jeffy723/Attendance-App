@@ -328,34 +328,49 @@ def mark_attendance():
     date = request.form.get("date")
     classes = []
 
-    # If date is selected, fetch classes for that date
+    # Load classes for selected date
     if date:
         cur.execute("""
-        SELECT class_log.id, subjects.name, class_log.hours
-        FROM class_log
-        JOIN subjects ON class_log.subject_id = subjects.id
-        WHERE class_log.date = %s
+            SELECT class_log.id, subjects.name, class_log.hours
+            FROM class_log
+            JOIN subjects ON class_log.subject_id = subjects.id
+            WHERE class_log.date = %s
         """, (date,))
         classes = cur.fetchall()
 
-    # If attendance form is submitted
+    # Handle attendance submission
     if request.method == "POST" and "submit_attendance" in request.form:
         selected_classes = request.form.getlist("class_id")
 
+        if not selected_classes:
+            flash("No classes selected.", "warning")
+            return redirect("/mark_attendance")
+
+        added = 0
+        skipped = 0
+
         for class_id in selected_classes:
-            # Prevent duplicate attendance
             cur.execute("""
-            SELECT id FROM attendance
-            WHERE class_id = %s AND student_id = %s
+                SELECT id FROM attendance
+                WHERE class_id = %s AND student_id = %s
             """, (class_id, student_id))
 
-            if not cur.fetchone():
+            if cur.fetchone():
+                skipped += 1
+            else:
                 cur.execute("""
-                INSERT INTO attendance (class_id, student_id, attended)
-                VALUES (%s, %s, TRUE)
+                    INSERT INTO attendance (class_id, student_id, attended)
+                    VALUES (%s, %s, TRUE)
                 """, (class_id, student_id))
+                added += 1
 
         db.commit()
+
+        if added:
+            flash(f"Attendance marked for {added} class(es).", "success")
+        if skipped:
+            flash(f"{skipped} class(es) were already marked.", "info")
+
         return redirect("/dashboard")
 
     return render_template(
@@ -363,6 +378,7 @@ def mark_attendance():
         classes=classes,
         date=date
     )
+
 
 
 @app.route("/view_attendance")
@@ -415,9 +431,9 @@ def edit_attendance():
     db = get_db()
     cur = db.cursor()
 
-    # Get student id
+    # Get student ID
     cur.execute(
-        "SELECT id FROM students WHERE user_id=%s",
+        "SELECT id FROM students WHERE user_id = %s",
         (session["user_id"],)
     )
     student_id = cur.fetchone()[0]
@@ -431,10 +447,13 @@ def edit_attendance():
         status = request.form["status"] == "1"
 
         cur.execute(
-            "UPDATE attendance SET attended=%s WHERE id=%s",
+            "UPDATE attendance SET attended = %s WHERE id = %s",
             (status, att_id)
         )
         db.commit()
+
+        flash("Attendance updated successfully.", "success")
+        return redirect("/edit_attendance")
 
     # Load records for selected date
     if date:
@@ -450,7 +469,6 @@ def edit_attendance():
               AND class_log.date = %s
             ORDER BY subjects.name
         """, (student_id, date))
-
         records = cur.fetchall()
 
     return render_template(
@@ -458,7 +476,6 @@ def edit_attendance():
         records=records,
         date=date
     )
-
 
 
 @app.route("/delete_attendance/<int:att_id>")
@@ -469,9 +486,10 @@ def delete_attendance(att_id):
     db = get_db()
     cur = db.cursor()
 
-    cur.execute("DELETE FROM attendance WHERE id=%s", (att_id,))
+    cur.execute("DELETE FROM attendance WHERE id = %s", (att_id,))
     db.commit()
 
+    flash("Attendance record deleted.", "danger")
     return redirect("/edit_attendance")
 
 
