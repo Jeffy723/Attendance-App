@@ -1,18 +1,70 @@
-<h2>Add Subject</h2>
+{% extends "base.html" %}
+{% block title %}Add Subject{% endblock %}
 
-<p><b>Active Semester:</b> {{ semester[1] }}</p>
+{% block content %}
 
-<form method="post">
-  Subject name:
-  <input name="subject" required>
-  <button>Add Subject</button>
-</form>
+<div class="mb-4">
+  <h3>Add Subject</h3>
+  <p class="text-muted">
+    Manage subjects under the active semester.
+  </p>
+</div>
 
-<h3>Subjects in this semester</h3>
-<ul>
-  {% for s in subjects %}
-    <li>{{ s[0] }}</li>
-  {% endfor %}
-</ul>
+<!-- Active semester -->
+<div class="alert alert-info d-flex justify-content-between align-items-center">
+  <div>
+    <strong>Active Semester:</strong> {{ semester[1] }}
+  </div>
+  <span class="badge bg-primary">ACTIVE</span>
+</div>
 
-<a href="/dashboard">Back</a>
+<!-- Add subject -->
+<div class="card shadow-sm mb-4">
+  <div class="card-body">
+    <h5 class="card-title mb-3">Add New Subject</h5>
+
+    <form method="post" class="row g-3 align-items-end">
+      <div class="col-md-6">
+        <label class="form-label">Subject Name</label>
+        <input
+          name="subject"
+          class="form-control"
+          placeholder="Eg: DBMS / OS / FLA"
+          required
+        >
+      </div>
+
+      <div class="col-md-4">
+        <button class="btn btn-success w-100">
+          Add Subject
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Subject list -->
+<div class="card shadow-sm mb-4">
+  <div class="card-body">
+    <h5 class="card-title mb-3">Subjects in this Semester</h5>
+
+    {% if subjects %}
+      <ul class="list-group">
+        {% for s in subjects %}
+          <li class="list-group-item">
+            {{ s[0] }}
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p class="text-muted">No subjects added yet.</p>
+    {% endif %}
+  </div>
+</div>
+
+<a href="/dashboard" class="btn btn-outline-secondary">
+  ← Back to Dashboard
+</a>
+
+{% endblock %}
+
