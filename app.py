@@ -59,11 +59,14 @@ def register():
                 (email, password, role)
             )
             db.commit()
-        except Exception as e:
-            db.rollback()
-            return "Email already registered"
 
-        return redirect("/")
+            flash("Registration successful! Please log in.", "success")
+            return redirect("/")
+
+        except Exception:
+            db.rollback()
+            flash("Email already registered. Try logging in.", "danger")
+            return redirect("/register")
 
     return render_template("register.html")
 
