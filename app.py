@@ -74,7 +74,7 @@ def dashboard():
         return render_template("owner_dashboard.html")
 
     if role == "editor":
-        return redirect("/editor_dashboard")
+        return render_template("editor_dashboard.html")
 
     # STUDENT
     db = get_db()
@@ -172,7 +172,7 @@ def editor_dashboard():
     if session.get("role") != "editor":
         return redirect("/")
 
-    return "<h2>Editor Dashboard (coming soon)</h2>"
+    return render_template("editor_dashboard.html")
 
 
 @app.route("/add_semester", methods=["GET", "POST"])

@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}Editor Dashboard{% endblock %}
+
+{% block content %}
+
+<div class="mb-4">
+  <h3>Editor Dashboard</h3>
+  <p class="text-muted">
+    Manage class hours and attendance records.
+  </p>
+</div>
+
+<div class="row g-3">
+
+  <div class="col-md-6">
+    <div class="card shadow-sm h-100">
+      <div class="card-body">
+        <h5 class="card-title">Add Class Hours</h5>
+        <p class="card-text">
+          Log class hours for subjects in the active semester.
+        </p>
+        <a href="/add_class" class="btn btn-primary w-100">
+          Add Class
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-6">
+    <div class="card shadow-sm h-100">
+      <div class="card-body">
+        <h5 class="card-title">Manage Class Hours</h5>
+        <p class="card-text">
+          Edit or delete previously logged class hours.
+        </p>
+        <a href="/manage_classes" class="btn btn-warning w-100">
+          Manage Classes
+        </a>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+{% endblock %}
