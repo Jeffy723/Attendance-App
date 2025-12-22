@@ -67,7 +67,6 @@ def dashboard():
     role = session.get("role")
     user_id = session.get("user_id")
 
-    # If not logged in
     if not role or not user_id:
         return redirect("/")
 
@@ -89,10 +88,7 @@ def dashboard():
     if not student:
         return redirect("/profile")
 
-    return render_template(
-        "student_dashboard.html",
-        student=student
-    )
+    return render_template("student_dashboard.html", student=student)
 
 
 
@@ -169,6 +165,14 @@ def remove_editor(uid):
     )
     db.commit()
     return redirect("/manage_users")
+
+
+@app.route("/editor_dashboard")
+def editor_dashboard():
+    if session.get("role") != "editor":
+        return redirect("/")
+
+    return "<h2>Editor Dashboard (coming soon)</h2>"
 
 
 @app.route("/add_semester", methods=["GET", "POST"])
