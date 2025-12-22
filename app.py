@@ -631,6 +631,7 @@ def delete_user(user_id):
 @app.route("/logout")
 def logout():
     session.clear()
+    flash("You have been logged out successfully.", "info")
     return redirect("/")
 
 
