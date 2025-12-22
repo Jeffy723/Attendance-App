@@ -1,11 +1,88 @@
-<h2>Owner Dashboard</h2>
+{% extends "base.html" %}
+{% block title %}Owner Dashboard{% endblock %}
 
-<ul>
-  <li><a href="/add_semester">Add / Change Semester</a></li>
-  <li><a href="/add_subject">Add Subject</a></li>
-  <li><a href="/add_class">Add Class Hours</a></li>
-  <li><a href="/manage_classes">Manage / Delete Class Hours</a></li>
-  <li><a href="/manage_users">Manage Users / Editors</a></li>
-</ul>
+{% block content %}
 
-<a href="/">Logout</a>
+<div class="mb-4">
+  <h3>Owner Dashboard</h3>
+  <p class="text-muted">
+    Control panel for managing semesters, subjects, classes, and users.
+  </p>
+</div>
+
+<div class="row g-3">
+
+  <div class="col-md-4">
+    <div class="card shadow-sm h-100">
+      <div class="card-body">
+        <h5 class="card-title">Semester</h5>
+        <p class="card-text">
+          Add or change the active semester.
+        </p>
+        <a href="/add_semester" class="btn btn-success w-100">
+          Manage Semester
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-4">
+    <div class="card shadow-sm h-100">
+      <div class="card-body">
+        <h5 class="card-title">Subjects</h5>
+        <p class="card-text">
+          Add subjects for the active semester.
+        </p>
+        <a href="/add_subject" class="btn btn-info w-100">
+          Add Subject
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-4">
+    <div class="card shadow-sm h-100">
+      <div class="card-body">
+        <h5 class="card-title">Users</h5>
+        <p class="card-text">
+          Manage users and editor roles.
+        </p>
+        <a href="/manage_users" class="btn btn-primary w-100">
+          Manage Users
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-6">
+    <div class="card shadow-sm h-100">
+      <div class="card-body">
+        <h5 class="card-title">Add Class</h5>
+        <p class="card-text">
+          Log class hours for subjects.
+        </p>
+        <a href="/add_class" class="btn btn-warning w-100">
+          Add Class Hours
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-6">
+    <div class="card shadow-sm h-100">
+      <div class="card-body">
+        <h5 class="card-title">Manage Classes</h5>
+        <p class="card-text">
+          Edit or delete class records.
+        </p>
+        <a href="/manage_classes" class="btn btn-danger w-100">
+          Manage Classes
+        </a>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+{% endblock %}
+
