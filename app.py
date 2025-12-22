@@ -185,13 +185,14 @@ def editor_dashboard():
     db = get_db()
     cur = db.cursor()
 
-    # total classes logged
+    # Total classes logged (all time)
     cur.execute("SELECT COUNT(*) FROM class_log")
     total_classes = cur.fetchone()[0]
 
-    # classes logged today
+    # Classes logged today
     cur.execute("""
-        SELECT COUNT(*) FROM class_log
+        SELECT COUNT(*)
+        FROM class_log
         WHERE date = CURRENT_DATE
     """)
     today_classes = cur.fetchone()[0]
