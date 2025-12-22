@@ -80,18 +80,22 @@ def dashboard():
     if not role or not user_id:
         return redirect("/")
 
+    # OWNER
     if role == "owner":
         return render_template("owner_dashboard.html")
 
+    # EDITOR
     if role == "editor":
         db = get_db()
         cur = db.cursor()
 
-        cur.execute("SELECT COUNT(*) FROM class_log")
+        # Total hours logged
+        cur.execute("SELECT COALESCE(SUM(hours), 0) FROM class_log")
         total_classes = cur.fetchone()[0]
 
+        # Hours logged today
         cur.execute(
-            "SELECT COUNT(*) FROM class_log WHERE date = %s",
+            "SELECT COALESCE(SUM(hours), 0) FROM class_log WHERE date = %s",
             (date.today(),)
         )
         today_classes = cur.fetchone()[0]
@@ -102,9 +106,8 @@ def dashboard():
             today_classes=today_classes
         )
 
-    # student
-    db = get_db()
-    cur = db.cursor()
+    # STUDENT
+    cur = get_db().cursor()
     cur.execute(
         "SELECT id, name FROM students WHERE user_id=%s",
         (user_id,)
