@@ -1,19 +1,65 @@
-<h2>Add / Change Semester</h2>
+{% extends "base.html" %}
+{% block title %}Manage Semester{% endblock %}
 
-<form method="post">
-  Semester name:
-  <input name="semester" placeholder="S4 / Semester 4" required>
-  <button>Add & Activate</button>
-</form>
+{% block content %}
 
-<h3>Existing Semesters</h3>
-<ul>
-  {% for s in semesters %}
-    <li>
-      {{ s[0] }}
-      {% if s[1] == 1 %} (ACTIVE) {% endif %}
-    </li>
-  {% endfor %}
-</ul>
+<div class="mb-4">
+  <h3>Manage Semester</h3>
+  <p class="text-muted">
+    Add a new semester and activate it.
+  </p>
+</div>
 
-<a href="/dashboard">Back</a>
+<!-- Add semester -->
+<div class="card shadow-sm mb-4">
+  <div class="card-body">
+    <h5 class="card-title mb-3">Add / Activate Semester</h5>
+
+    <form method="post" class="row g-3 align-items-end">
+      <div class="col-md-6">
+        <label class="form-label">Semester Name</label>
+        <input
+          name="semester"
+          placeholder="S4 / Semester 4"
+          class="form-control"
+          required
+        >
+      </div>
+
+      <div class="col-md-4">
+        <button class="btn btn-success w-100">
+          Add & Activate
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Existing semesters -->
+<div class="card shadow-sm mb-4">
+  <div class="card-body">
+    <h5 class="card-title mb-3">Existing Semesters</h5>
+
+    {% if semesters %}
+      <ul class="list-group">
+        {% for s in semesters %}
+          <li class="list-group-item d-flex justify-content-between align-items-center">
+            {{ s[0] }}
+            {% if s[1] %}
+              <span class="badge bg-success">ACTIVE</span>
+            {% endif %}
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p class="text-muted">No semesters added yet.</p>
+    {% endif %}
+  </div>
+</div>
+
+<a href="/dashboard" class="btn btn-outline-secondary">
+  ← Back to Dashboard
+</a>
+
+{% endblock %}
+
