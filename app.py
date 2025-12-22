@@ -84,9 +84,25 @@ def dashboard():
         return render_template("owner_dashboard.html")
 
     if role == "editor":
-        return render_template("editor_dashboard.html")
+        db = get_db()
+        cur = db.cursor()
 
-    # STUDENT
+        cur.execute("SELECT COUNT(*) FROM class_log")
+        total_classes = cur.fetchone()[0]
+
+        cur.execute(
+            "SELECT COUNT(*) FROM class_log WHERE date = %s",
+            (date.today(),)
+        )
+        today_classes = cur.fetchone()[0]
+
+        return render_template(
+            "editor_dashboard.html",
+            total_classes=total_classes,
+            today_classes=today_classes
+        )
+
+    # student
     db = get_db()
     cur = db.cursor()
     cur.execute(
@@ -99,7 +115,6 @@ def dashboard():
         return redirect("/profile")
 
     return render_template("student_dashboard.html", student=student)
-
 
 
 @app.route("/profile", methods=["GET", "POST"])
@@ -176,32 +191,6 @@ def remove_editor(uid):
     )
     db.commit()
     return redirect("/manage_users")
-
-
-@app.route("/editor_dashboard")
-def editor_dashboard():
-    if session.get("role") != "editor":
-        return redirect("/")
-
-    db = get_db()
-    cur = db.cursor()
-
-    # Total classes logged (all time)
-    cur.execute("SELECT COUNT(*) FROM class_log")
-    total_classes = cur.fetchone()[0]
-
-    # Classes logged today
-    cur.execute(
-        "SELECT COUNT(*) FROM class_log WHERE date = %s",
-        (date.today(),)
-    )
-    today_classes = cur.fetchone()[0]
-
-    return render_template(
-        "editor_dashboard.html",
-        total_classes=total_classes,
-        today_classes=today_classes
-    )
 
 
 @app.route("/add_semester", methods=["GET", "POST"])
