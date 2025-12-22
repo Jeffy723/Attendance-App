@@ -179,29 +179,7 @@ def remove_editor(uid):
 
 @app.route("/editor_dashboard")
 def editor_dashboard():
-    if session.get("role") != "editor":
-        return redirect("/")
-
-    db = get_db()
-    cur = db.cursor()
-
-    # Total classes logged (all time)
-    cur.execute("SELECT COUNT(*) FROM class_log")
-    total_classes = cur.fetchone()[0]
-
-    # Classes logged today
-    cur.execute("""
-        SELECT COUNT(*)
-        FROM class_log
-        WHERE date = CURRENT_DATE
-    """)
-    today_classes = cur.fetchone()[0]
-
-    return render_template(
-        "editor_dashboard.html",
-        total_classes=total_classes,
-        today_classes=today_classes
-    )
+    return "EDITOR ROUTE HIT"
 
 
 @app.route("/add_semester", methods=["GET", "POST"])
