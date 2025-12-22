@@ -64,20 +64,25 @@ def register():
 
 @app.route("/dashboard")
 def dashboard():
-    role = session["role"]
+    role = session.get("role")
+    user_id = session.get("user_id")
+
+    # If not logged in
+    if not role or not user_id:
+        return redirect("/")
 
     if role == "owner":
         return render_template("owner_dashboard.html")
 
     if role == "editor":
-        return "EDITOR DASHBOARD"
+        return redirect("/editor_dashboard")
 
     # STUDENT
     db = get_db()
     cur = db.cursor()
     cur.execute(
         "SELECT id, name FROM students WHERE user_id=%s",
-        (session["user_id"],)
+        (user_id,)
     )
     student = cur.fetchone()
 
@@ -88,6 +93,7 @@ def dashboard():
         "student_dashboard.html",
         student=student
     )
+
 
 
 @app.route("/profile", methods=["GET", "POST"])
