@@ -6,18 +6,41 @@
 <div class="mb-4">
   <h3>Editor Dashboard</h3>
   <p class="text-muted">
-    Manage class hours and attendance records.
+    Manage class hours for the active semester.
   </p>
 </div>
 
+<!-- Stats Section -->
+<div class="row g-3 mb-4">
+  <div class="col-md-6">
+    <div class="card text-center shadow-sm">
+      <div class="card-body">
+        <h6 class="text-muted">Total Classes Logged</h6>
+        <h3>{{ total_classes }}</h3>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-6">
+    <div class="card text-center shadow-sm">
+      <div class="card-body">
+        <h6 class="text-muted">Classes Logged Today</h6>
+        <h3>{{ today_classes }}</h3>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Action Cards -->
 <div class="row g-3">
 
+  <!-- Add Class -->
   <div class="col-md-6">
     <div class="card shadow-sm h-100">
       <div class="card-body">
         <h5 class="card-title">Add Class Hours</h5>
         <p class="card-text">
-          Log class hours for subjects in the active semester.
+          Log new class hours for subjects in the active semester.
         </p>
         <a href="/add_class" class="btn btn-primary w-100">
           Add Class
@@ -26,6 +49,7 @@
     </div>
   </div>
 
+  <!-- Manage Classes -->
   <div class="col-md-6">
     <div class="card shadow-sm h-100">
       <div class="card-body">
@@ -43,3 +67,4 @@
 </div>
 
 {% endblock %}
+
