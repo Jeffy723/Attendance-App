@@ -94,32 +94,33 @@ def dashboard():
 
 @app.route("/profile", methods=["GET", "POST"])
 def profile():
+    if not session.get("user_id"):
+        return redirect("/")
+
     db = get_db()
     cur = db.cursor()
 
-    cur.execute("SELECT id FROM semesters WHERE is_active=TRUE")
+    # get active semester
+    cur.execute("SELECT id FROM semesters WHERE is_active = TRUE")
     sem = cur.fetchone()
+
+    if not sem:
+        return "No active semester. Contact admin."
 
     if request.method == "POST":
         name = request.form["name"]
-        roll = request.form["roll"]
+        roll_no = request.form["roll_no"]
 
         cur.execute("""
-        INSERT INTO students (user_id,name,roll_no,semester_id)
-        VALUES (%s,%s,%s,%s)
-        """, (session["user_id"], name, roll, sem[0]))
+            INSERT INTO students (user_id, name, roll_no, semester_id)
+            VALUES (%s, %s, %s, %s)
+        """, (session["user_id"], name, roll_no, sem[0]))
 
         db.commit()
         return redirect("/dashboard")
 
-    return """
-    <h3>Complete Profile</h3>
-    <form method="post">
-      Name: <input name="name"><br>
-      Roll No: <input name="roll"><br>
-      <button>Save</button>
-    </form>
-    """
+    return render_template("profile.html")
+
     
 @app.route("/manage_users")
 def manage_users():
