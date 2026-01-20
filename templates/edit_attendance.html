@@ -51,10 +51,10 @@
         <tbody>
           {% for r in records %}
           <tr>
-            <td class="text-start">{{ r[1] }}</td>
-            <td>{{ r[2] }}</td>
+            <td class="text-start">{{ r.subject }}</td>
+            <td>{{ r.hours }}</td>
             <td>
-              {% if r[3] %}
+              {% if r.attended %}
                 <span class="badge bg-success">Present</span>
               {% else %}
                 <span class="badge bg-danger">Absent</span>
@@ -63,10 +63,10 @@
             <td>
               <form method="post" class="d-flex gap-2">
                 <input type="hidden" name="date" value="{{ date }}">
-                <input type="hidden" name="att_id" value="{{ r[0] }}">
+                <input type="hidden" name="att_id" value="{{ r.id }}">
                 <select name="status" class="form-select form-select-sm">
-                  <option value="1" {% if r[3] %}selected{% endif %}>Present</option>
-                  <option value="0" {% if not r[3] %}selected{% endif %}>Absent</option>
+                  <option value="1" {% if r.attended %}selected{% endif %}>Present</option>
+                  <option value="0" {% if not r.attended %}selected{% endif %}>Absent</option>
                 </select>
                 <button class="btn btn-sm btn-primary">
                   Update
@@ -75,7 +75,7 @@
             </td>
             <td>
               <a
-                href="/delete_attendance/{{ r[0] }}"
+                href="/delete_attendance/{{ r.id }}"
                 class="btn btn-sm btn-outline-danger"
                 onclick="return confirm('Delete this record?')"
               >

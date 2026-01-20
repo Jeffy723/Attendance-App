@@ -46,17 +46,17 @@
       <tbody>
         {% for c in classes %}
         <tr>
-          <td>{{ c[2] }}</td>
-          <td>{{ c[3] }}</td>
+          <td>{{ c.subject }}</td>
+          <td>{{ c.hours }}</td>
           <td class="text-center">
             <a
-              href="/edit_class/{{ c[0] }}"
+              href="/edit_class/{{ c.id }}"
               class="btn btn-sm btn-warning"
             >
               Edit
             </a>
             <a
-              href="/delete_class/{{ c[0] }}"
+              href="/delete_class/{{ c.id }}"
               class="btn btn-sm btn-danger"
               onclick="return confirm(
                 'Deleting this class will remove all linked attendance. Continue?'

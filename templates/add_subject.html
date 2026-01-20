@@ -13,7 +13,7 @@
 <!-- Active semester -->
 <div class="alert alert-info d-flex justify-content-between align-items-center">
   <div>
-    <strong>Active Semester:</strong> {{ semester[1] }}
+    <strong>Active Semester:</strong> {{ semester.name }}
   </div>
   <span class="badge bg-primary">ACTIVE</span>
 </div>
@@ -52,7 +52,7 @@
       <ul class="list-group">
         {% for s in subjects %}
           <li class="list-group-item">
-            {{ s[0] }}
+            {{ s.name }}
           </li>
         {% endfor %}
       </ul>

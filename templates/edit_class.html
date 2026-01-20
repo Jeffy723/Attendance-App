@@ -20,7 +20,7 @@
         <input
           type="date"
           name="date"
-          value="{{ class_data[0] }}"
+          value="{{ class_data.date }}"
           class="form-control"
           required
         >
@@ -30,9 +30,9 @@
         <label class="form-label">Subject</label>
         <select name="subject_id" class="form-select">
           {% for s in subjects %}
-            <option value="{{ s[0] }}"
-              {% if s[0] == class_data[1] %}selected{% endif %}>
-              {{ s[1] }}
+            <option value="{{ s._id }}"
+              {% if s._id == class_data.subject_id %}selected{% endif %}>
+              {{ s.name }}
             </option>
           {% endfor %}
         </select>
@@ -43,7 +43,7 @@
         <input
           type="number"
           name="hours"
-          value="{{ class_data[2] }}"
+          value="{{ class_data.hours }}"
           min="1"
           class="form-control"
           required

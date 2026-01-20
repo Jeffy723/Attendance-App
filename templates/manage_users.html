@@ -23,11 +23,11 @@
       <tbody>
         {% for u in users %}
         <tr>
-          <td>{{ u[1] }}</td>
+          <td>{{ u.email }}</td>
           <td>
-            {% if u[2] == 'owner' %}
+            {% if u.role == 'owner' %}
               <span class="badge bg-dark">Owner</span>
-            {% elif u[2] == 'editor' %}
+            {% elif u.role == 'editor' %}
               <span class="badge bg-warning text-dark">Editor</span>
             {% else %}
               <span class="badge bg-secondary">Student</span>
@@ -35,16 +35,16 @@
           </td>
 
           <td class="text-center">
-            {% if u[2] == 'student' %}
+            {% if u.role == 'student' %}
               <a
-                href="/make_editor/{{ u[0] }}"
+                href="/make_editor/{{ u._id }}"
                 class="btn btn-sm btn-success me-1"
               >
                 Make Editor
               </a>
 
               <a
-                href="/delete_user/{{ u[0] }}"
+                href="/delete_user/{{ u._id }}"
                 class="btn btn-sm btn-danger"
                 onclick="return confirm(
                   'Are you sure? This will permanently delete the user and all related data.'
@@ -53,16 +53,16 @@
                 Delete
               </a>
 
-            {% elif u[2] == 'editor' %}
+            {% elif u.role == 'editor' %}
               <a
-                href="/remove_editor/{{ u[0] }}"
+                href="/remove_editor/{{ u._id }}"
                 class="btn btn-sm btn-warning me-1"
               >
                 Remove Editor
               </a>
 
               <a
-                href="/delete_user/{{ u[0] }}"
+                href="/delete_user/{{ u._id }}"
                 class="btn btn-sm btn-danger"
                 onclick="return confirm(
                   'Are you sure? This will permanently delete the user and all related data.'

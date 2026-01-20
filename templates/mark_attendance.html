@@ -53,14 +53,14 @@
           <tbody>
             {% for c in classes %}
             <tr>
-              <td class="text-start">{{ c[1] }}</td>
-              <td>{{ c[2] }}</td>
+              <td class="text-start">{{ c.subject }}</td>
+              <td>{{ c.hours }}</td>
               <td>
                 <input
                   type="checkbox"
                   class="form-check-input"
                   name="class_id"
-                  value="{{ c[0] }}"
+                  value="{{ c.id }}"
                 >
               </td>
             </tr>
