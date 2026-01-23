@@ -41,7 +41,7 @@ def init_db():
     db.semesters
     db.students
     db.subjects
-    db.class_logs
+    db.class_log
     db.attendance
 
     print("MongoDB collections initialized ✅")
