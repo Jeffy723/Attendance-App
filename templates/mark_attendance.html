@@ -41,6 +41,10 @@
   <div class="card-body">
     <!-- 🔹 SUBMIT ATTENDANCE USING POST -->
     <form method="post">
+
+      <!-- 🔹 REQUIRED: keep date during POST -->
+      <input type="hidden" name="date" value="{{ date }}">
+
       <div class="table-responsive">
         <table class="table table-bordered align-middle text-center">
           <thead class="table-light">

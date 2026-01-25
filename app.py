@@ -273,7 +273,6 @@ def add_class():
 
     # get active semester
     semester = db.semesters.find_one({"is_active": True})
-
     if not semester:
         return "No active semester. Add semester first."
 
@@ -291,21 +290,31 @@ def add_class():
         hours = int(request.form["hours"])
         note = request.form.get("note", "")
 
+        # 🔴 ALWAYS generate next class_log_no
+        last = db.class_log.find_one(
+            {},
+            sort=[("class_log_no", -1)]
+        )
+        next_no = last["class_log_no"] + 1 if last and "class_log_no" in last else 1
+
         db.class_log.insert_one({
             "date": class_date,
             "subject_id": ObjectId(subject_id),
             "hours": hours,
-            "note": note
+            "note": note,
+            "semester_id": semester["_id"],   # 🔴 REQUIRED
+            "class_log_no": next_no           # 🔴 REQUIRED
         })
 
         return redirect("/add_class")
 
     # fetch class logs (latest first)
     class_logs = list(
-        db.class_log.find().sort("date", -1)
+        db.class_log.find(
+            {"semester_id": semester["_id"]}
+        ).sort("date", -1)
     )
 
-    # enrich class logs with subject name (manual join)
     classes = []
     for log in class_logs:
         subject = db.subjects.find_one(
@@ -341,6 +350,7 @@ def mark_attendance():
 
     student_id = student["_id"]
 
+    # 🔹 ACTIVE SEMESTER
     active_sem = db.semesters.find_one({"is_active": True})
     if not active_sem:
         return "No active semester"
@@ -352,20 +362,18 @@ def mark_attendance():
     # SUBMIT ATTENDANCE
     # ---------------------------
     if request.method == "POST" and "submit_attendance" in request.form:
-        selected_classes = request.form.getlist("class_log_no")
-
-        if not selected_classes:
-            flash("No classes selected.", "warning")
-            return redirect("/mark_attendance")
+        selected = request.form.getlist("class_id")
 
         added, skipped = 0, 0
 
-        for cl_no in selected_classes:
-            cl_no = int(cl_no)
+        for class_id in selected:
+            class_log = db.class_log.find_one({"_id": ObjectId(class_id)})
+            if not class_log:
+                continue
 
             exists = db.attendance.find_one({
-                "class_log_no": cl_no,
                 "student_id": student_id,
+                "class_log_no": class_log["class_log_no"],
                 "semester_id": semester_id
             })
 
@@ -373,30 +381,27 @@ def mark_attendance():
                 skipped += 1
             else:
                 db.attendance.insert_one({
-                    "class_log_no": cl_no,
                     "student_id": student_id,
+                    "class_log_no": class_log["class_log_no"],
                     "semester_id": semester_id,
                     "present": True
                 })
                 added += 1
 
-        if added:
-            flash(f"Attendance marked for {added} class(es).", "success")
-        if skipped:
-            flash(f"{skipped} class(es) already existed.", "info")
-
+        flash(f"{added} added, {skipped} skipped", "success")
         return redirect("/view_attendance")
 
     # ---------------------------
     # LOAD CLASSES (GET)
     # ---------------------------
     selected_date = request.args.get("date")
-
     if selected_date:
-        class_logs = list(db.class_log.find({
-            "date": selected_date,
-            "semester_id": semester_id
-        }))
+        class_logs = list(
+            db.class_log.find({
+                "date": selected_date,
+                "semester_id": semester_id
+            }).sort("class_log_no", 1)
+        )
 
         for log in class_logs:
             subject = db.subjects.find_one(
@@ -405,9 +410,9 @@ def mark_attendance():
             )
 
             classes.append({
-                "class_log_no": log["class_log_no"],
-                "subject": subject["name"] if subject else "Unknown",
-                "hours": log.get("hours", 1)
+                "id": str(log["_id"]),
+                "subject": subject["name"],
+                "hours": log["hours"]
             })
 
     return render_template(
@@ -588,12 +593,19 @@ def manage_classes():
 
     db = get_db()
 
+    semester = db.semesters.find_one({"is_active": True})
+    if not semester:
+        return "No active semester"
+
     selected_date = request.form.get("date")
     classes = []
 
     if selected_date:
         class_logs = list(
-            db.class_log.find({"date": selected_date})
+            db.class_log.find({
+                "date": selected_date,
+                "semester_id": semester["_id"]
+            })
         )
 
         for log in class_logs:
@@ -604,12 +616,12 @@ def manage_classes():
 
             classes.append({
                 "id": str(log["_id"]),
-                "date": log.get("date"),
+                "date": log["date"],
                 "subject": subject["name"] if subject else "Unknown",
-                "hours": log.get("hours", 0)
+                "hours": log["hours"],
+                "class_log_no": log.get("class_log_no")
             })
 
-        # sort by subject name (like ORDER BY subjects.name)
         classes.sort(key=lambda c: c["subject"])
 
     return render_template(
@@ -644,18 +656,11 @@ def edit_class(cid):
 
         return redirect("/manage_classes")
 
-    # Load class data
-    class_data = db.class_log.find_one(
-        {"_id": ObjectId(cid)}
-    )
-
+    class_data = db.class_log.find_one({"_id": ObjectId(cid)})
     if not class_data:
         return redirect("/manage_classes")
 
-    # Load all subjects
-    subjects = list(
-        db.subjects.find({}, {"name": 1})
-    )
+    subjects = list(db.subjects.find({}, {"name": 1}))
 
     return render_template(
         "edit_class.html",
@@ -672,12 +677,19 @@ def delete_class(cid):
 
     db = get_db()
 
-    # Delete all attendance records for this class
-    db.attendance.delete_many(
-        {"class_id": ObjectId(cid)}
-    )
+    cls = db.class_log.find_one({"_id": ObjectId(cid)})
+    if not cls:
+        return redirect("/manage_classes")
 
-    # Delete the class itself
+    cl_no = cls.get("class_log_no")
+
+    # 🔴 Delete attendance linked via class_log_no
+    if cl_no is not None:
+        db.attendance.delete_many(
+            {"class_log_no": cl_no}
+        )
+
+    # Delete class itself
     db.class_log.delete_one(
         {"_id": ObjectId(cid)}
     )
