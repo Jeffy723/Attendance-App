@@ -413,48 +413,50 @@ def view_attendance():
 
     db = get_db()
 
+    # get logged-in student
     student = db.students.find_one(
         {"user_id": ObjectId(session["user_id"])}
     )
+
     if not student:
         return redirect("/profile")
 
     student_id = student["_id"]
 
+    # get active semester
+    active_sem = db.semesters.find_one({"is_active": True})
+    if not active_sem:
+        return "No active semester"
+
+    semester_id = active_sem["_id"]
+
     data = []
-    subjects = list(db.subjects.find())
+
+    # load subjects of this semester
+    subjects = list(db.subjects.find({"semester_id": semester_id}))
 
     for subject in subjects:
-        # ✅ SUPPORT OLD + NEW class_log SCHEMA
-        class_logs = list(db.class_log.find({
-            "$or": [
-                {"subject_id": subject["_id"]},
-                {"subject": subject["name"]}
-            ]
-        }))
+        # get all class logs for this subject + semester
+        class_logs = list(
+            db.class_log.find({
+                "subject_id": subject["_id"],
+                "semester_id": semester_id
+            })
+        )
 
         total_hours = sum(cls.get("hours", 0) for cls in class_logs)
 
         attended_hours = 0
+
         for cls in class_logs:
-            att = db.attendance.find_one({
-                "$or": [
-                    # NEW schema
-                    {
-                        "class_id": cls.get("_id"),
-                        "student_id": student_id,
-                        "attended": True
-                    },
-                    # OLD Render schema
-                    {
-                        "class_log_no": cls.get("class_log_no"),
-                        "student_id": student_id,
-                        "present": True
-                    }
-                ]
+            attendance = db.attendance.find_one({
+                "student_id": student_id,
+                "semester_id": semester_id,
+                "class_log_no": cls["class_log_no"],
+                "present": True
             })
 
-            if att:
+            if attendance:
                 attended_hours += cls.get("hours", 0)
 
         data.append((
