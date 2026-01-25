@@ -328,17 +328,14 @@ def add_class():
 
 @app.route("/mark_attendance", methods=["GET", "POST"])
 def mark_attendance():
-    # Only students can mark attendance
     if session.get("role") != "student":
         return "Unauthorized"
 
     db = get_db()
 
-    # Get student document
     student = db.students.find_one(
         {"user_id": ObjectId(session["user_id"])}
     )
-
     if not student:
         return redirect("/profile")
 
@@ -347,25 +344,28 @@ def mark_attendance():
     selected_date = request.form.get("date")
     classes = []
 
-    # Load classes for selected date
     if selected_date:
         class_logs = list(
             db.class_log.find({"date": selected_date})
         )
 
-        # manual join with subjects
         for log in class_logs:
             subject = db.subjects.find_one(
-                {"_id": log["subject_id"]},
+                {
+                    "$or": [
+                        {"_id": log.get("subject_id")},
+                        {"name": log.get("subject")}
+                    ]
+                },
                 {"name": 1}
             )
+
             classes.append({
                 "id": str(log["_id"]),
                 "subject": subject["name"] if subject else "Unknown",
-                "hours": log["hours"]
+                "hours": log.get("hours", 0)
             })
 
-    # Handle attendance submission
     if request.method == "POST" and "submit_attendance" in request.form:
         selected_classes = request.form.getlist("class_id")
 
@@ -416,33 +416,44 @@ def view_attendance():
     student = db.students.find_one(
         {"user_id": ObjectId(session["user_id"])}
     )
-
     if not student:
         return redirect("/profile")
 
     student_id = student["_id"]
-    active_sem = db.semesters.find_one({"is_active": True})
 
     data = []
     subjects = list(db.subjects.find())
 
     for subject in subjects:
-        class_logs = list(
-            db.class_log.find({
-                "subject_id": subject["_id"],
-                "semester_id": active_sem["_id"]
-            })
-        )
+        # ✅ SUPPORT OLD + NEW class_log SCHEMA
+        class_logs = list(db.class_log.find({
+            "$or": [
+                {"subject_id": subject["_id"]},
+                {"subject": subject["name"]}
+            ]
+        }))
 
         total_hours = sum(cls.get("hours", 0) for cls in class_logs)
 
         attended_hours = 0
         for cls in class_logs:
             att = db.attendance.find_one({
-                "class_log_no": cls["class_log_no"],
-                "student_id": student_id,
-                "present": True
+                "$or": [
+                    # NEW schema
+                    {
+                        "class_id": cls.get("_id"),
+                        "student_id": student_id,
+                        "attended": True
+                    },
+                    # OLD Render schema
+                    {
+                        "class_log_no": cls.get("class_log_no"),
+                        "student_id": student_id,
+                        "present": True
+                    }
+                ]
             })
+
             if att:
                 attended_hours += cls.get("hours", 0)
 
@@ -472,11 +483,9 @@ def edit_attendance():
 
     db = get_db()
 
-    # Get student document
     student = db.students.find_one(
         {"user_id": ObjectId(session["user_id"])}
     )
-
     if not student:
         return redirect("/profile")
 
@@ -485,37 +494,43 @@ def edit_attendance():
     selected_date = request.form.get("date")
     records = []
 
-    # Handle update
     if request.method == "POST" and "att_id" in request.form:
         att_id = request.form["att_id"]
         status = request.form["status"] == "1"
 
         db.attendance.update_one(
             {"_id": ObjectId(att_id)},
-            {"$set": {"attended": status}}
+            {"$set": {"attended": status, "present": status}}
         )
 
         flash("Attendance updated successfully.", "success")
         return redirect("/edit_attendance")
 
-    # Load records for selected date
     if selected_date:
         attendance_records = list(
-            db.attendance.find(
-                {"student_id": student_id}
-            )
+            db.attendance.find({"student_id": student_id})
         )
 
         for att in attendance_records:
-            class_log = db.class_log.find_one(
-                {"_id": att["class_id"]}
-            )
+            class_log = None
+
+            if "class_id" in att:
+                class_log = db.class_log.find_one({"_id": att["class_id"]})
+            elif "class_log_no" in att:
+                class_log = db.class_log.find_one(
+                    {"class_log_no": att["class_log_no"]}
+                )
 
             if not class_log or class_log.get("date") != selected_date:
                 continue
 
             subject = db.subjects.find_one(
-                {"_id": class_log["subject_id"]},
+                {
+                    "$or": [
+                        {"_id": class_log.get("subject_id")},
+                        {"name": class_log.get("subject")}
+                    ]
+                },
                 {"name": 1}
             )
 
@@ -523,10 +538,9 @@ def edit_attendance():
                 "id": str(att["_id"]),
                 "subject": subject["name"] if subject else "Unknown",
                 "hours": class_log.get("hours", 0),
-                "attended": att.get("attended", False)
+                "attended": att.get("attended", att.get("present", False))
             })
 
-        # sort by subject name (like ORDER BY subjects.name)
         records.sort(key=lambda r: r["subject"])
 
     return render_template(

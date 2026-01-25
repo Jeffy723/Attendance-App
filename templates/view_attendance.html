@@ -62,7 +62,8 @@
           {% set total = d[1] %}
           {% set attended = d[2] %}
           {% set missed = total - attended %}
-          {% set pct = (attended / total * 100) if total > 0 else 0 %}
+          {% set raw_pct = (attended / total * 100) if total > 0 else 0 %}
+          {% set pct = 0 if raw_pct < 0 else (100 if raw_pct > 100 else raw_pct) %}
           <tr>
             <td class="text-start">{{ d[0] }}</td>
             <td>{{ total }}</td>
