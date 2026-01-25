@@ -13,7 +13,7 @@
 <!-- Date selection card -->
 <div class="card shadow-sm mb-4">
   <div class="card-body">
-    <!-- 🔹 MUST BE GET -->
+    <!-- 🔹 LOAD CLASSES USING GET -->
     <form method="get" class="row g-3 align-items-end">
       <div class="col-md-4">
         <label class="form-label">Select Date</label>
@@ -39,7 +39,7 @@
 <!-- Classes table -->
 <div class="card shadow-sm mb-4">
   <div class="card-body">
-    <!-- 🔹 THIS stays POST -->
+    <!-- 🔹 SUBMIT ATTENDANCE USING POST -->
     <form method="post">
       <div class="table-responsive">
         <table class="table table-bordered align-middle text-center">
@@ -59,8 +59,8 @@
                 <input
                   type="checkbox"
                   class="form-check-input"
-                  name="class_id"
-                  value="{{ c.id }}"
+                  name="class_log_no"
+                  value="{{ c.class_log_no }}"
                 >
               </td>
             </tr>

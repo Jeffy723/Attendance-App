@@ -336,18 +336,23 @@ def mark_attendance():
     student = db.students.find_one(
         {"user_id": ObjectId(session["user_id"])}
     )
-
     if not student:
         return redirect("/profile")
 
     student_id = student["_id"]
+
+    active_sem = db.semesters.find_one({"is_active": True})
+    if not active_sem:
+        return "No active semester"
+
+    semester_id = active_sem["_id"]
     classes = []
 
     # ---------------------------
-    # SUBMIT ATTENDANCE (POST)
+    # SUBMIT ATTENDANCE
     # ---------------------------
     if request.method == "POST" and "submit_attendance" in request.form:
-        selected_classes = request.form.getlist("class_id")
+        selected_classes = request.form.getlist("class_log_no")
 
         if not selected_classes:
             flash("No classes selected.", "warning")
@@ -355,28 +360,32 @@ def mark_attendance():
 
         added, skipped = 0, 0
 
-        for class_id in selected_classes:
+        for cl_no in selected_classes:
+            cl_no = int(cl_no)
+
             exists = db.attendance.find_one({
-                "class_id": ObjectId(class_id),
-                "student_id": student_id
+                "class_log_no": cl_no,
+                "student_id": student_id,
+                "semester_id": semester_id
             })
 
             if exists:
                 skipped += 1
             else:
                 db.attendance.insert_one({
-                    "class_id": ObjectId(class_id),
+                    "class_log_no": cl_no,
                     "student_id": student_id,
-                    "attended": True
+                    "semester_id": semester_id,
+                    "present": True
                 })
                 added += 1
 
         if added:
             flash(f"Attendance marked for {added} class(es).", "success")
         if skipped:
-            flash(f"{skipped} class(es) were already marked.", "info")
+            flash(f"{skipped} class(es) already existed.", "info")
 
-        return redirect("/dashboard")
+        return redirect("/view_attendance")
 
     # ---------------------------
     # LOAD CLASSES (GET)
@@ -384,9 +393,10 @@ def mark_attendance():
     selected_date = request.args.get("date")
 
     if selected_date:
-        class_logs = list(
-            db.class_log.find({"date": selected_date})
-        )
+        class_logs = list(db.class_log.find({
+            "date": selected_date,
+            "semester_id": semester_id
+        }))
 
         for log in class_logs:
             subject = db.subjects.find_one(
@@ -395,9 +405,9 @@ def mark_attendance():
             )
 
             classes.append({
-                "id": str(log["_id"]),
+                "class_log_no": log["class_log_no"],
                 "subject": subject["name"] if subject else "Unknown",
-                "hours": log["hours"]
+                "hours": log.get("hours", 1)
             })
 
     return render_template(
@@ -414,27 +424,21 @@ def view_attendance():
 
     db = get_db()
 
-    # Get logged-in student
     student = db.students.find_one(
         {"user_id": ObjectId(session["user_id"])}
     )
-
     if not student:
         return redirect("/profile")
 
     student_id = student["_id"]
 
-    # Get active semester
     active_sem = db.semesters.find_one({"is_active": True})
     if not active_sem:
         return "No active semester"
 
     semester_id = active_sem["_id"]
 
-    # 🔹 Build class_log_no → hours + subject map
-    class_logs = list(
-        db.class_log.find({"semester_id": semester_id})
-    )
+    class_logs = list(db.class_log.find({"semester_id": semester_id}))
 
     class_log_map = {}
     subject_hours = {}
@@ -445,19 +449,15 @@ def view_attendance():
             continue
 
         class_log_map[cl_no] = cls
-
         subj_id = cls["subject_id"]
-        subject_hours.setdefault(subj_id, 0)
-        subject_hours[subj_id] += cls.get("hours", 0)
 
-    # 🔹 Fetch attendance for this student & semester
-    attendance = list(
-        db.attendance.find({
-            "student_id": student_id,
-            "semester_id": semester_id,
-            "present": True
-        })
-    )
+        subject_hours[subj_id] = subject_hours.get(subj_id, 0) + cls.get("hours", 1)
+
+    attendance = list(db.attendance.find({
+        "student_id": student_id,
+        "semester_id": semester_id,
+        "present": True
+    }))
 
     subject_attended = {}
 
@@ -469,27 +469,19 @@ def view_attendance():
         cls = class_log_map[cl_no]
         subj_id = cls["subject_id"]
 
-        subject_attended.setdefault(subj_id, 0)
-        subject_attended[subj_id] += cls.get("hours", 0)
+        subject_attended[subj_id] = subject_attended.get(subj_id, 0) + cls.get("hours", 1)
 
-    # 🔹 Build final data for template
     data = []
-
     subjects = list(db.subjects.find({"semester_id": semester_id}))
 
     for subject in subjects:
         total = subject_hours.get(subject["_id"], 0)
         attended = subject_attended.get(subject["_id"], 0)
-
-        data.append((
-            subject["name"],
-            total,
-            attended
-        ))
+        data.append((subject["name"], total, attended))
 
     total_all = sum(d[1] for d in data)
     attended_all = sum(d[2] for d in data)
-    overall_pct = (attended_all / total_all * 100) if total_all > 0 else 0
+    overall_pct = (attended_all / total_all * 100) if total_all else 0
 
     return render_template(
         "view_attendance.html",
