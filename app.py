@@ -32,6 +32,7 @@ def login():
 
         # SUCCESS
         session["user_id"] = str(user["_id"])
+        session["email"] = user["email"] 
         session["role"] = user["role"]
 
         flash("Login successful!", "success")
@@ -104,8 +105,7 @@ def dashboard():
 
     # STUDENT
     student = db.students.find_one(
-        {"user_id": ObjectId(user_id)},
-        {"name": 1}
+    	{"email": session["email"], "active": True}
     )
 
     if not student:
@@ -131,12 +131,18 @@ def profile():
         name = request.form["name"]
         roll_no = request.form["roll_no"]
 
-        db.students.insert_one({
-            "user_id": ObjectId(session["user_id"]),
-            "name": name,
-            "roll_no": roll_no,
-            "semester_id": sem["_id"]
-        })
+        db.students.update_one(
+    		{"email": session["email"]},
+    		{
+        	    "$set": {
+           		"name": name,
+            		"roll_no": int(roll_no),
+            		"active": True
+        	    }
+    		},
+    		upsert=True
+	)
+
 
         return redirect("/dashboard")
 
