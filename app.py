@@ -413,7 +413,7 @@ def view_attendance():
 
     db = get_db()
 
-    # get logged-in student
+    # Get logged-in student
     student = db.students.find_one(
         {"user_id": ObjectId(session["user_id"])}
     )
@@ -423,58 +423,79 @@ def view_attendance():
 
     student_id = student["_id"]
 
-    # get active semester
+    # Get active semester
     active_sem = db.semesters.find_one({"is_active": True})
     if not active_sem:
         return "No active semester"
 
     semester_id = active_sem["_id"]
 
+    # 🔹 Build class_log_no → hours + subject map
+    class_logs = list(
+        db.class_log.find({"semester_id": semester_id})
+    )
+
+    class_log_map = {}
+    subject_hours = {}
+
+    for cls in class_logs:
+        cl_no = cls.get("class_log_no")
+        if cl_no is None:
+            continue
+
+        class_log_map[cl_no] = cls
+
+        subj_id = cls["subject_id"]
+        subject_hours.setdefault(subj_id, 0)
+        subject_hours[subj_id] += cls.get("hours", 0)
+
+    # 🔹 Fetch attendance for this student & semester
+    attendance = list(
+        db.attendance.find({
+            "student_id": student_id,
+            "semester_id": semester_id,
+            "present": True
+        })
+    )
+
+    subject_attended = {}
+
+    for att in attendance:
+        cl_no = att.get("class_log_no")
+        if cl_no not in class_log_map:
+            continue
+
+        cls = class_log_map[cl_no]
+        subj_id = cls["subject_id"]
+
+        subject_attended.setdefault(subj_id, 0)
+        subject_attended[subj_id] += cls.get("hours", 0)
+
+    # 🔹 Build final data for template
     data = []
 
-    # load subjects of this semester
     subjects = list(db.subjects.find({"semester_id": semester_id}))
 
     for subject in subjects:
-        # get all class logs for this subject + semester
-        class_logs = list(
-            db.class_log.find({
-                "subject_id": subject["_id"],
-                "semester_id": semester_id
-            })
-        )
-
-        total_hours = sum(cls.get("hours", 0) for cls in class_logs)
-
-        attended_hours = 0
-
-        for cls in class_logs:
-            attendance = db.attendance.find_one({
-                "student_id": student_id,
-                "semester_id": semester_id,
-                "class_log_no": cls["class_log_no"],
-                "present": True
-            })
-
-            if attendance:
-                attended_hours += cls.get("hours", 0)
+        total = subject_hours.get(subject["_id"], 0)
+        attended = subject_attended.get(subject["_id"], 0)
 
         data.append((
             subject["name"],
-            total_hours,
-            attended_hours
+            total,
+            attended
         ))
 
-    total = sum(d[1] for d in data)
-    attended = sum(d[2] for d in data)
-    pct = (attended / total * 100) if total > 0 else 0
+    total_all = sum(d[1] for d in data)
+    attended_all = sum(d[2] for d in data)
+    overall_pct = (attended_all / total_all * 100) if total_all > 0 else 0
 
     return render_template(
         "view_attendance.html",
         data=data,
-        total_all=total,
-        attended_all=attended,
-        overall_pct=pct
+        total_all=total_all,
+        attended_all=attended_all,
+        overall_pct=overall_pct
     )
 
 
