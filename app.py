@@ -413,7 +413,6 @@ def view_attendance():
 
     db = get_db()
 
-    # Get student document
     student = db.students.find_one(
         {"user_id": ObjectId(session["user_id"])}
     )
@@ -422,28 +421,27 @@ def view_attendance():
         return redirect("/profile")
 
     student_id = student["_id"]
+    active_sem = db.semesters.find_one({"is_active": True})
 
     data = []
-
-    # For each subject, calculate total hours and attended hours
     subjects = list(db.subjects.find())
 
     for subject in subjects:
-        # All classes for this subject
         class_logs = list(
-            db.class_log.find({"subject_id": subject["_id"]})
+            db.class_log.find({
+                "subject_id": subject["_id"],
+                "semester_id": active_sem["_id"]
+            })
         )
 
-        total_hours = sum(
-            cls.get("hours", 0) for cls in class_logs
-        )
+        total_hours = sum(cls.get("hours", 0) for cls in class_logs)
 
         attended_hours = 0
         for cls in class_logs:
             att = db.attendance.find_one({
-                "class_id": cls["_id"],
+                "class_log_no": cls["class_log_no"],
                 "student_id": student_id,
-                "attended": True
+                "present": True
             })
             if att:
                 attended_hours += cls.get("hours", 0)
