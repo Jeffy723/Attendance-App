@@ -13,7 +13,8 @@
 <!-- Date selection card -->
 <div class="card shadow-sm mb-4">
   <div class="card-body">
-    <form method="post" class="row g-3 align-items-end">
+    <!-- 🔹 MUST BE GET -->
+    <form method="get" class="row g-3 align-items-end">
       <div class="col-md-4">
         <label class="form-label">Select Date</label>
         <input
@@ -26,7 +27,7 @@
       </div>
 
       <div class="col-md-3">
-        <button class="btn btn-primary w-100">
+        <button type="submit" class="btn btn-primary w-100">
           Load Classes
         </button>
       </div>
@@ -38,9 +39,8 @@
 <!-- Classes table -->
 <div class="card shadow-sm mb-4">
   <div class="card-body">
+    <!-- 🔹 THIS stays POST -->
     <form method="post">
-      <input type="hidden" name="date" value="{{ date }}">
-
       <div class="table-responsive">
         <table class="table table-bordered align-middle text-center">
           <thead class="table-light">

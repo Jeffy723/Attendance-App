@@ -336,36 +336,16 @@ def mark_attendance():
     student = db.students.find_one(
         {"user_id": ObjectId(session["user_id"])}
     )
+
     if not student:
         return redirect("/profile")
 
     student_id = student["_id"]
-
-    selected_date = request.form.get("date")
     classes = []
 
-    if selected_date:
-        class_logs = list(
-            db.class_log.find({"date": selected_date})
-        )
-
-        for log in class_logs:
-            subject = db.subjects.find_one(
-                {
-                    "$or": [
-                        {"_id": log.get("subject_id")},
-                        {"name": log.get("subject")}
-                    ]
-                },
-                {"name": 1}
-            )
-
-            classes.append({
-                "id": str(log["_id"]),
-                "subject": subject["name"] if subject else "Unknown",
-                "hours": log.get("hours", 0)
-            })
-
+    # ---------------------------
+    # SUBMIT ATTENDANCE (POST)
+    # ---------------------------
     if request.method == "POST" and "submit_attendance" in request.form:
         selected_classes = request.form.getlist("class_id")
 
@@ -373,16 +353,15 @@ def mark_attendance():
             flash("No classes selected.", "warning")
             return redirect("/mark_attendance")
 
-        added = 0
-        skipped = 0
+        added, skipped = 0, 0
 
         for class_id in selected_classes:
-            existing = db.attendance.find_one({
+            exists = db.attendance.find_one({
                 "class_id": ObjectId(class_id),
                 "student_id": student_id
             })
 
-            if existing:
+            if exists:
                 skipped += 1
             else:
                 db.attendance.insert_one({
@@ -398,6 +377,28 @@ def mark_attendance():
             flash(f"{skipped} class(es) were already marked.", "info")
 
         return redirect("/dashboard")
+
+    # ---------------------------
+    # LOAD CLASSES (GET)
+    # ---------------------------
+    selected_date = request.args.get("date")
+
+    if selected_date:
+        class_logs = list(
+            db.class_log.find({"date": selected_date})
+        )
+
+        for log in class_logs:
+            subject = db.subjects.find_one(
+                {"_id": log["subject_id"]},
+                {"name": 1}
+            )
+
+            classes.append({
+                "id": str(log["_id"]),
+                "subject": subject["name"] if subject else "Unknown",
+                "hours": log["hours"]
+            })
 
     return render_template(
         "mark_attendance.html",
