@@ -264,6 +264,16 @@ def add_subject():
         subjects=subjects
     )
 
+
+def get_next_class_log_no(db):
+    counter = db.counters.find_one_and_update(
+        {"_id": "class_log_no"},
+        {"$inc": {"seq": 1}},
+        return_document=True
+    )
+    return counter["seq"]
+
+
 @app.route("/add_class", methods=["GET", "POST"])
 def add_class():
     if session.get("role") not in ["owner", "editor"]:
@@ -271,12 +281,12 @@ def add_class():
 
     db = get_db()
 
-    # get active semester
+    # 🔹 get active semester
     semester = db.semesters.find_one({"is_active": True})
     if not semester:
         return "No active semester. Add semester first."
 
-    # get subjects of active semester
+    # 🔹 get subjects of active semester
     subjects = list(
         db.subjects.find(
             {"semester_id": semester["_id"]},
@@ -286,33 +296,37 @@ def add_class():
 
     if request.method == "POST":
         class_date = request.form["date"]
-        subject_id = request.form["subject"]
+        subject_id = ObjectId(request.form["subject"])
         hours = int(request.form["hours"])
-        note = request.form.get("note", "")
+        note = request.form.get("note", "").strip()
 
-        # 🔴 ALWAYS generate next class_log_no
-        last = db.class_log.find_one(
-            {},
-            sort=[("class_log_no", -1)]
-        )
-        next_no = last["class_log_no"] + 1 if last and "class_log_no" in last else 1
+        # 🔴 validate subject belongs to active semester
+        subject = db.subjects.find_one({
+            "_id": subject_id,
+            "semester_id": semester["_id"]
+        })
+        if not subject:
+            return "Invalid subject for active semester"
+
+        # 🔴 atomic class_log_no generation
+        next_no = get_next_class_log_no(db)
 
         db.class_log.insert_one({
             "date": class_date,
-            "subject_id": ObjectId(subject_id),
+            "subject_id": subject_id,
             "hours": hours,
             "note": note,
-            "semester_id": semester["_id"],   # 🔴 REQUIRED
-            "class_log_no": next_no           # 🔴 REQUIRED
+            "semester_id": semester["_id"],   # ✅ REQUIRED
+            "class_log_no": next_no           # ✅ REQUIRED
         })
 
         return redirect("/add_class")
 
-    # fetch class logs (latest first)
+    # 🔹 fetch class logs (latest class_log_no first)
     class_logs = list(
         db.class_log.find(
             {"semester_id": semester["_id"]}
-        ).sort("date", -1)
+        ).sort("class_log_no", -1)
     )
 
     classes = []
@@ -324,7 +338,8 @@ def add_class():
         classes.append({
             "date": log["date"],
             "subject": subject["name"] if subject else "Unknown",
-            "hours": log["hours"]
+            "hours": log["hours"],
+            "class_log_no": log["class_log_no"]
         })
 
     return render_template(
