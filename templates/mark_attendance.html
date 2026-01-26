@@ -10,10 +10,9 @@
   </p>
 </div>
 
-<!-- Date selection card -->
+<!-- Date selection -->
 <div class="card shadow-sm mb-4">
   <div class="card-body">
-    <!-- 🔹 LOAD CLASSES USING GET -->
     <form method="get" class="row g-3 align-items-end">
       <div class="col-md-4">
         <label class="form-label">Select Date</label>
@@ -25,7 +24,6 @@
           required
         >
       </div>
-
       <div class="col-md-3">
         <button type="submit" class="btn btn-primary w-100">
           Load Classes
@@ -36,13 +34,9 @@
 </div>
 
 {% if classes %}
-<!-- Classes table -->
 <div class="card shadow-sm mb-4">
   <div class="card-body">
-    <!-- 🔹 SUBMIT ATTENDANCE USING POST -->
     <form method="post">
-
-      <!-- 🔹 REQUIRED: keep date during POST -->
       <input type="hidden" name="date" value="{{ date }}">
 
       <div class="table-responsive">

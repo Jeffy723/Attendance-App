@@ -357,6 +357,7 @@ def mark_attendance():
 
     db = get_db()
 
+    # 🔹 get student
     student = db.students.find_one(
         {"user_id": ObjectId(session["user_id"])}
     )
@@ -365,7 +366,7 @@ def mark_attendance():
 
     student_id = student["_id"]
 
-    # 🔹 ACTIVE SEMESTER
+    # 🔹 active semester
     active_sem = db.semesters.find_one({"is_active": True})
     if not active_sem:
         return "No active semester"
@@ -374,21 +375,32 @@ def mark_attendance():
     classes = []
 
     # ---------------------------
-    # SUBMIT ATTENDANCE
+    # SUBMIT ATTENDANCE (POST)
     # ---------------------------
     if request.method == "POST" and "submit_attendance" in request.form:
-        selected = request.form.getlist("class_id")
+        selected = request.form.getlist("class_log_no")
+
+        if not selected:
+            flash("No classes selected", "warning")
+            return redirect(request.url)
 
         added, skipped = 0, 0
 
-        for class_id in selected:
-            class_log = db.class_log.find_one({"_id": ObjectId(class_id)})
+        for cl_no in selected:
+            cl_no = int(cl_no)
+
+            # 🔹 verify class exists
+            class_log = db.class_log.find_one({
+                "class_log_no": cl_no,
+                "semester_id": semester_id
+            })
             if not class_log:
                 continue
 
+            # 🔹 prevent duplicates
             exists = db.attendance.find_one({
                 "student_id": student_id,
-                "class_log_no": class_log["class_log_no"],
+                "class_log_no": cl_no,
                 "semester_id": semester_id
             })
 
@@ -397,7 +409,7 @@ def mark_attendance():
             else:
                 db.attendance.insert_one({
                     "student_id": student_id,
-                    "class_log_no": class_log["class_log_no"],
+                    "class_log_no": cl_no,
                     "semester_id": semester_id,
                     "present": True
                 })
@@ -425,8 +437,8 @@ def mark_attendance():
             )
 
             classes.append({
-                "id": str(log["_id"]),
-                "subject": subject["name"],
+                "class_log_no": log["class_log_no"],
+                "subject": subject["name"] if subject else "Unknown",
                 "hours": log["hours"]
             })
 
@@ -458,6 +470,7 @@ def view_attendance():
 
     semester_id = active_sem["_id"]
 
+    # 🔹 load class logs
     class_logs = list(db.class_log.find({"semester_id": semester_id}))
 
     class_log_map = {}
@@ -470,9 +483,9 @@ def view_attendance():
 
         class_log_map[cl_no] = cls
         subj_id = cls["subject_id"]
-
         subject_hours[subj_id] = subject_hours.get(subj_id, 0) + cls.get("hours", 1)
 
+    # 🔹 load attendance
     attendance = list(db.attendance.find({
         "student_id": student_id,
         "semester_id": semester_id,
@@ -482,15 +495,15 @@ def view_attendance():
     subject_attended = {}
 
     for att in attendance:
-        cl_no = att.get("class_log_no")
+        cl_no = att["class_log_no"]
         if cl_no not in class_log_map:
             continue
 
         cls = class_log_map[cl_no]
         subj_id = cls["subject_id"]
-
         subject_attended[subj_id] = subject_attended.get(subj_id, 0) + cls.get("hours", 1)
 
+    # 🔹 prepare view data
     data = []
     subjects = list(db.subjects.find({"semester_id": semester_id}))
 
