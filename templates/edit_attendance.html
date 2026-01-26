@@ -6,14 +6,14 @@
 <div class="mb-4">
   <h3>Edit Attendance</h3>
   <p class="text-muted">
-    Select a date to edit or delete attendance records.
+    Select a date to edit or mark attendance.
   </p>
 </div>
 
-<!-- Date picker -->
+<!-- Date picker (GET) -->
 <div class="card shadow-sm mb-4">
   <div class="card-body">
-    <form method="post" class="row g-3 align-items-end">
+    <form method="get" class="row g-3 align-items-end">
       <div class="col-md-4">
         <label class="form-label">Select Date</label>
         <input
@@ -45,7 +45,6 @@
             <th>Hours</th>
             <th>Status</th>
             <th>Update</th>
-            <th>Delete</th>
           </tr>
         </thead>
         <tbody>
@@ -53,34 +52,39 @@
           <tr>
             <td class="text-start">{{ r.subject }}</td>
             <td>{{ r.hours }}</td>
+
+            <!-- STATUS -->
             <td>
-              {% if r.attended %}
+              {% if r.present is none %}
+                <span class="badge bg-secondary">Not Marked</span>
+              {% elif r.present %}
                 <span class="badge bg-success">Present</span>
               {% else %}
                 <span class="badge bg-danger">Absent</span>
               {% endif %}
             </td>
+
+            <!-- UPDATE -->
             <td>
-              <form method="post" class="d-flex gap-2">
+              <form method="post" class="d-flex gap-2 justify-content-center">
                 <input type="hidden" name="date" value="{{ date }}">
-                <input type="hidden" name="att_id" value="{{ r.id }}">
-                <select name="status" class="form-select form-select-sm">
-                  <option value="1" {% if r.attended %}selected{% endif %}>Present</option>
-                  <option value="0" {% if not r.attended %}selected{% endif %}>Absent</option>
+                <input type="hidden" name="class_log_no" value="{{ r.class_log_no }}">
+
+                <select name="status" class="form-select form-select-sm w-auto">
+                  <option value="1"
+                    {% if r.present is true %}selected{% endif %}>
+                    Present
+                  </option>
+                  <option value="0"
+                    {% if r.present is false or r.present is none %}selected{% endif %}>
+                    Absent
+                  </option>
                 </select>
+
                 <button class="btn btn-sm btn-primary">
                   Update
                 </button>
               </form>
-            </td>
-            <td>
-              <a
-                href="/delete_attendance/{{ r.id }}"
-                class="btn btn-sm btn-outline-danger"
-                onclick="return confirm('Delete this record?')"
-              >
-                Delete
-              </a>
             </td>
           </tr>
           {% endfor %}

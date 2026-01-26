@@ -540,78 +540,80 @@ def edit_attendance():
 
     student_id = student["_id"]
 
-    selected_date = request.form.get("date")
+    # 🔹 ACTIVE SEMESTER
+    semester = db.semesters.find_one({"is_active": True})
+    if not semester:
+        return "No active semester"
+
+    semester_id = semester["_id"]
+
+    selected_date = request.args.get("date") or request.form.get("date")
     records = []
 
-    if request.method == "POST" and "att_id" in request.form:
-        att_id = request.form["att_id"]
+    # ---------------------------
+    # UPDATE ATTENDANCE (POST)
+    # ---------------------------
+    if request.method == "POST" and "class_log_no" in request.form:
+        class_log_no = int(request.form["class_log_no"])
         status = request.form["status"] == "1"
 
-        db.attendance.update_one(
-            {"_id": ObjectId(att_id)},
-            {"$set": {"attended": status, "present": status}}
-        )
+        existing = db.attendance.find_one({
+            "student_id": student_id,
+            "class_log_no": class_log_no,
+            "semester_id": semester_id
+        })
+
+        if existing:
+            db.attendance.update_one(
+                {"_id": existing["_id"]},
+                {"$set": {"present": status}}
+            )
+        else:
+            db.attendance.insert_one({
+                "student_id": student_id,
+                "class_log_no": class_log_no,
+                "semester_id": semester_id,
+                "present": status
+            })
 
         flash("Attendance updated successfully.", "success")
-        return redirect("/edit_attendance")
+        return redirect(f"/edit_attendance?date={selected_date}")
 
+    # ---------------------------
+    # LOAD CLASSES (LEFT JOIN)
+    # ---------------------------
     if selected_date:
-        attendance_records = list(
-            db.attendance.find({"student_id": student_id})
+        class_logs = list(
+            db.class_log.find({
+                "date": selected_date,
+                "semester_id": semester_id
+            }).sort("class_log_no", 1)
         )
 
-        for att in attendance_records:
-            class_log = None
-
-            if "class_id" in att:
-                class_log = db.class_log.find_one({"_id": att["class_id"]})
-            elif "class_log_no" in att:
-                class_log = db.class_log.find_one(
-                    {"class_log_no": att["class_log_no"]}
-                )
-
-            if not class_log or class_log.get("date") != selected_date:
-                continue
+        for cls in class_logs:
+            attendance = db.attendance.find_one({
+                "student_id": student_id,
+                "class_log_no": cls["class_log_no"],
+                "semester_id": semester_id
+            })
 
             subject = db.subjects.find_one(
-                {
-                    "$or": [
-                        {"_id": class_log.get("subject_id")},
-                        {"name": class_log.get("subject")}
-                    ]
-                },
+                {"_id": cls["subject_id"]},
                 {"name": 1}
             )
 
             records.append({
-                "id": str(att["_id"]),
+                "class_log_no": cls["class_log_no"],
                 "subject": subject["name"] if subject else "Unknown",
-                "hours": class_log.get("hours", 0),
-                "attended": att.get("attended", att.get("present", False))
+                "hours": cls.get("hours", 1),
+                "present": attendance["present"] if attendance else None
             })
-
-        records.sort(key=lambda r: r["subject"])
 
     return render_template(
         "edit_attendance.html",
         records=records,
         date=selected_date
     )
-
-
-@app.route("/delete_attendance/<att_id>")
-def delete_attendance(att_id):
-    if session.get("role") != "student":
-        return "Unauthorized"
-
-    db = get_db()
-
-    db.attendance.delete_one(
-        {"_id": ObjectId(att_id)}
-    )
-
-    flash("Attendance record deleted.", "danger")
-    return redirect("/edit_attendance")
 
 
 @app.route("/manage_classes", methods=["GET", "POST"])
