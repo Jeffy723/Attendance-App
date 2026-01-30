@@ -269,6 +269,7 @@ def get_next_class_log_no(db):
     counter = db.counters.find_one_and_update(
         {"_id": "class_log_no"},
         {"$inc": {"seq": 1}},
+        upsert=True,
         return_document=True
     )
     return counter["seq"]
